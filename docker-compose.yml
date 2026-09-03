@@ -1,0 +1,31 @@
+name: okugym
+
+services:
+  # Passkey auth + per-user data (Node, no framework).
+  # Prebuilt GHCR images (ghcr.io/duartesantos8/*) are gone with the deleted account —
+  # `docker compose up` builds everything from source (api/ + root Dockerfile).
+  api:
+    build: ./api
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - PORT=3000            # internal port (nginx proxies here) — do not change
+      - DATA_DIR=/data
+    volumes:
+      - ./data:/data         # users, passkeys, per-user state, session secret — BACK THIS UP
+
+  # Builds the React frontend (multi-stage) and serves it, proxying /api → api
+  # and the exercise media (mounted from the local ./media folder) — single origin for passkeys.
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_started
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    volumes:
+      - ./media/img:/usr/share/nginx/html/img:ro
+      - ./media/gif:/usr/share/nginx/html/gif:ro

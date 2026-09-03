@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: okugym
+    env: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
