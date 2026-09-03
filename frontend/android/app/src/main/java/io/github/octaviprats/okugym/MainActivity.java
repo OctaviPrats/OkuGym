@@ -1,4 +1,4 @@
-package ch.duartesantos.okugym;
+package io.github.octaviprats.okugym;
 
 import com.getcapacitor.BridgeActivity;
 
