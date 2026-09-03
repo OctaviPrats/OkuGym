@@ -7,7 +7,7 @@ services:
   api:
     build: ./api
     restart: unless-stopped
-    env_file: .env.example
+    env_file: .env
     environment:
       - PORT=3000            # internal port (nginx proxies here) — do not change
       - DATA_DIR=/data
@@ -15,7 +15,7 @@ services:
       - ./data:/data         # users, passkeys, per-user state, session secret — BACK THIS UP
 
   # Builds the React frontend (multi-stage) and serves it, proxying /api → api
-  # and the exercise media (committed in-repo at ./media) — single origin for passkeys.
+  # and the exercise media (mounted from the local ./media folder) — single origin for passkeys.
   web:
     build:
       context: .

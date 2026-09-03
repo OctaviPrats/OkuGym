@@ -8,12 +8,12 @@ need — what the app protects you from and what it doesn't.
 
 Only the **latest release**. Releases are semver tags (`v1.0.0` → `v1.2.3`, see
 [CHANGELOG.md](CHANGELOG.md)); there is no LTS or maintenance branch and older tags are never
-patched. A fix ships in the next release and in the `latest` images on ghcr.io.
+patched. A fix ships in the next release, and self-hosters should update to the latest source.
 
 Updating a self-hosted instance:
 
 ```bash
-git pull && docker compose pull && docker compose up -d
+git pull && docker compose up -d --build
 ```
 
 ## Reporting a vulnerability
@@ -50,7 +50,6 @@ in the thread; there's no objection, and no request to sit on it indefinitely.
   change a signed-in user's data.
 - **Shipped deployment config** — `docker-compose.yml`, `web/nginx.conf`, the two Dockerfiles:
   a default that exposes something a self-hoster wouldn't expect to be exposed.
-- **The published images** `ghcr.io/duartesantos8/okugym-api` and `-web`.
 
 ## Out of scope
 

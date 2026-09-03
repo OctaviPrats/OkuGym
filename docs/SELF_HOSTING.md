@@ -8,17 +8,15 @@ This guide takes you from "just cloned it" to "using it from my phone over the i
 Requirements: [Docker](https://docs.docker.com/get-docker/) with the Compose plugin.
 
 ```bash
-git clone https://github.com/DuarteSantos8/gym-app okugym
+git clone https://github.com/OctaviPrats/OkuGym okugym
 cd okugym
 cp .env.example .env
-docker compose pull   # prebuilt images from ghcr.io (amd64 + arm64) — or skip and build from source
-docker compose up -d
+docker compose up -d --build
 ```
 
-- First start downloads the exercise images/GIFs (~140 MB) once into `app/img` and `app/gif`.
+- First start expects the exercise images/GIFs (~140 MB) under `media/img` and `media/gif`.
 - Open **http://localhost:8080** and create a profile with a passkey.
-- Rather build from source than pull prebuilt images? Skip `docker compose pull` and run
-  `docker compose up -d --build` instead — no Node needed locally either way.
+- If `media/img` and `media/gif` are still empty, run `./scripts/fetch-media.sh` once before starting.
 
 Check it's healthy:
 
@@ -137,16 +135,6 @@ refuses the lock while the phone is in Low Power Mode.
 
 ## 7. Updating
 
-Running prebuilt images:
-
-```bash
-git pull                    # picks up compose/config changes
-docker compose pull
-docker compose up -d
-```
-
-Building from source instead:
-
 ```bash
 git pull
 docker compose up -d --build
@@ -161,9 +149,9 @@ downloaded media are untouched.
 |---|---|
 | No passkey prompt on my phone | You're on `http://` or an IP, not HTTPS. Set up a domain (section 3). |
 | "verification failed" on login | `RP_ID`/`ORIGIN` don't match the URL in the address bar. Make them exact, restart. |
-| Media didn't download | `docker compose logs media`. Re-run `docker compose up -d`, or run `./scripts/fetch-media.sh`. |
+| Media didn't download | Run `./scripts/fetch-media.sh`, then restart with `docker compose up -d`. |
 | Port 8080 already used | Set `WEB_PORT=9090` in `.env` (and update `ORIGIN` for local testing). |
 | No "Notifications" option in Settings | Requires a signed-in profile and HTTPS (or `localhost`) — guest mode and plain HTTP over LAN can't subscribe. |
 | Day reminder fires at the wrong time | Toggle it off and on in Settings so it re-detects your browser's timezone (also happens automatically on every app load — see section 6). |
 | Want to reset a stuck login | Delete the cookie in your browser; sessions are just signed cookies. |
-| `docker compose pull` fails with "denied" / "unauthorized" | The prebuilt images aren't published yet, or need to be, or the GHCR package is still private — build from source instead (`docker compose up -d --build`). |
+| `docker compose up -d` fails after source changes | Re-run with `docker compose up -d --build` so Compose rebuilds the images from the checked-out source. |
