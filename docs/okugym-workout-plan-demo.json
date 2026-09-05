@@ -1,0 +1,51 @@
+{
+  "okugym_plan": 1,
+  "exported": "2026-09-03",
+  "name": "Demo Push Pull Legs",
+  "week": {
+    "1": "demo-routine-push",
+    "3": "demo-routine-pull",
+    "5": "demo-routine-legs"
+  },
+  "routines": [
+    {
+      "id": "demo-routine-push",
+      "name": "Push Day",
+      "emoji": "barbell",
+      "ex": [
+        { "id": "0025", "sets": 4, "reps": 8 },
+        { "id": "0047", "sets": 3, "reps": 10 },
+        { "id": "0426", "sets": 3, "reps": 10 },
+        { "id": "0334", "sets": 3, "reps": 12 },
+        { "id": "0241", "sets": 3, "reps": 12 },
+        { "id": "0251", "sets": 3, "reps": 10 }
+      ]
+    },
+    {
+      "id": "demo-routine-pull",
+      "name": "Pull Day",
+      "emoji": "pullup",
+      "ex": [
+        { "id": "2330", "sets": 4, "reps": 10 },
+        { "id": "0027", "sets": 4, "reps": 8 },
+        { "id": "1323", "sets": 3, "reps": 10 },
+        { "id": "0031", "sets": 3, "reps": 10 },
+        { "id": "0313", "sets": 3, "reps": 12 }
+      ]
+    },
+    {
+      "id": "demo-routine-legs",
+      "name": "Leg Day",
+      "emoji": "legs",
+      "ex": [
+        { "id": "0043", "sets": 4, "reps": 8 },
+        { "id": "0085", "sets": 3, "reps": 10 },
+        { "id": "0739", "sets": 3, "reps": 12 },
+        { "id": "0585", "sets": 3, "reps": 12 },
+        { "id": "0586", "sets": 3, "reps": 12 },
+        { "id": "0605", "sets": 4, "reps": 15 }
+      ]
+    }
+  ],
+  "customEx": []
+}

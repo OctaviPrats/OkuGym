@@ -84,6 +84,11 @@ as a home-screen app, passkey sign-in, offline support, sync across your phone a
 - 📦 **Yours to keep** — one-tap JSON export/import, guest mode, **no telemetry**
 - 📱 **Standalone Android app** — the whole tracker can be built as a sideloadable APK: no account, no server, data on the phone, native workout reminders
 
+## AI plan authoring files
+
+- `docs/okugym-workout-plan-demo.json` — minimal valid example of an importable OkuGym plan file.
+- `docs/okugym-exercises-catalog.json` — full exercise catalog (1324 entries) with IDs and key metadata to build plans programmatically.
+
 ## Quick start (self-host)
 
 You need [Docker](https://docs.docker.com/get-docker/) with Compose.
