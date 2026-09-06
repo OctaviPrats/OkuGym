@@ -205,12 +205,22 @@ function ImportSummary({ parsed, close }) {
   </>
 }
 
-/** Read a CSV/XML export, then show what it would do. */
+/** Read a CSV/XML export or plan JSON, then show what it would do. */
 export function importFromApp(file, onDone) {
   const rd = new FileReader()
   rd.onload = () => {
+    const text = String(rd.result)
+    const lowerName = String(file?.name || '').toLowerCase()
+    if (lowerName.endsWith('.json') || String(file?.type || '').includes('json')) {
+      try {
+        const bundle = parsePlan(text)
+        planImportSheet(bundle)
+        onDone && onDone()
+        return
+      } catch (e) { /* not a plan JSON; fall through to CSV/XML import */ }
+    }
     let parsed
-    try { parsed = parseImport(String(rd.result), { unit: S().unit }) }
+    try { parsed = parseImport(text, { unit: S().unit }) }
     catch (e) { toast(t('Could not read that file')); return }
     if (parsed.error === 'empty') { toast(t('That file is empty')); return }
     if (parsed.error) { toast(t("That file's columns aren't recognised — see the docs for supported apps.")); return }
