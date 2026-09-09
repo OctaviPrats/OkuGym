@@ -14,6 +14,15 @@ const eachSet = fn => S.workouts.forEach(w => w.entries.forEach(e => e.sets.forE
 const sum = effortSummary(S, 0)   // 0 = the whole history
 
 describe('demo seed — effort', () => {
+  it('seeds body-weight and body-fat trends with goals', () => {
+    expect(S.bodyweight.length).toBeGreaterThanOrEqual(20)
+    expect(S.bodyfat.length).toBe(S.bodyweight.length)
+    expect(S.targetW).toBe(77)
+    expect(S.targetBF).toBe(16)
+    expect(S.bodyfat.every(b => b.bf >= 3 && b.bf <= 70)).toBe(true)
+    expect(S.bodyfat.map(b => b.d)).toEqual([...S.bodyfat.map(b => b.d)].sort())
+  })
+
   it('rates enough of the history to clear every guard in the effort stats', () => {
     expect(hasEffort(S)).toBe(true)
     expect(sum.done).toBeGreaterThan(400)
@@ -105,5 +114,6 @@ describe('demo seed — effort', () => {
     const b = buildDemoState()
     const flat = st => st.workouts.map(w => w.entries.map(e => e.sets.map(s => `${s.w}x${s.r}/${s.rir ?? ''}/${s.rpe ?? ''}`).join(',')).join('|')).join(';')
     expect(flat(b)).toBe(flat(S))
+    expect(b.bodyfat).toEqual(S.bodyfat)
   })
 })
