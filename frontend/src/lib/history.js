@@ -222,7 +222,10 @@ export function setsDoneActive(A) {
 }
 const lastOf = xs => (xs.length ? xs[xs.length - 1] : null)
 export const lastBW = S => lastOf(S.bodyweight || [])
-export const lastBF = S => lastOf(S.bodyfat || [])
+export const lastBF = S => {
+  const x = lastOf(S.bodyComp || [])
+  return x ? { ...x, bf: x.v } : null
+}
 
 // Group consecutive items sharing a superset id (sg) into "units" of indices.
 // items may be routine exercises ({sg}) or active-workout entries ({sg}).

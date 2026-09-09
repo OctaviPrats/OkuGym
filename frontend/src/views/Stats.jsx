@@ -145,11 +145,11 @@ export default function Stats() {
     .map(b => ({ t: b.t || new Date(b.d).getTime(), y: b.w, d: b.d }))
   const bw30 = S.bodyweight.filter(b => (b.t || new Date(b.d).getTime()) > now - 30 * 86400000)
   const bwDelta30 = bw30.length > 1 ? bw30[bw30.length - 1].w - bw30[0].w : null
-  const bodyfat = S.bodyfat || []
+  const bodyfat = S.bodyComp || []
   const bfPts = bodyfat.filter(b => range === 0 || (b.t || new Date(b.d).getTime()) > now - range * 86400000)
-    .map(b => ({ t: b.t || new Date(b.d).getTime(), y: b.bf, d: b.d }))
+    .map(b => ({ t: b.t || new Date(b.d).getTime(), y: b.v, d: b.d }))
   const bf30 = bodyfat.filter(b => (b.t || new Date(b.d).getTime()) > now - 30 * 86400000)
-  const bfDelta30 = bf30.length > 1 ? bf30[bf30.length - 1].bf - bf30[0].bf : null
+  const bfDelta30 = bf30.length > 1 ? bf30[bf30.length - 1].v - bf30[0].v : null
   const monthW = S.workouts.filter(w => w.d.slice(0, 7) === todayISO().slice(0, 7)).length
 
   const exHist = [...new Set(S.workouts.flatMap(w => w.entries.map(e => e.id)))].filter(id => EXIDX[id]).sort((a, b) => EXIDX[a].n < EXIDX[b].n ? -1 : 1)

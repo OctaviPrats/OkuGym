@@ -105,16 +105,16 @@ describe('effortOf', () => {
     it('returns the latest body-weight and body-fat entries', () => {
       const S = {
         bodyweight: [{ d: '2026-09-01', w: 81.4 }, { d: '2026-09-04', w: 80.9 }],
-        bodyfat: [{ d: '2026-09-02', bf: 19.6 }, { d: '2026-09-05', bf: 19.1 }]
+        bodyComp: [{ d: '2026-09-02', v: 19.6 }, { d: '2026-09-05', v: 19.1 }]
       }
       expect(lastBW(S)).toEqual({ d: '2026-09-04', w: 80.9 })
-      expect(lastBF(S)).toEqual({ d: '2026-09-05', bf: 19.1 })
+      expect(lastBF(S)).toEqual({ d: '2026-09-05', v: 19.1, bf: 19.1 })
     })
 
     it('treats missing body-fat history as empty', () => {
       expect(lastBW({ bodyweight: [] })).toBeNull()
       expect(lastBF({})).toBeNull()
-      expect(lastBF({ bodyfat: [] })).toBeNull()
+      expect(lastBF({ bodyComp: [] })).toBeNull()
     })
   })
 

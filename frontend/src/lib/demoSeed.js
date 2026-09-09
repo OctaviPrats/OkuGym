@@ -73,7 +73,7 @@ export function buildDemoState() {
 
   const workouts = []
   const bodyweight = []
-  const bodyfat = []
+  const bodyComp = []
   const exWeights = {}
   const best = {}
 
@@ -88,7 +88,7 @@ export function buildDemoState() {
       const w = BW_FROM + (BW_TO - BW_FROM) * p + (rnd() - 0.5) * 0.7
       bodyweight.push({ d: iso, w: Math.round(w * 10) / 10, t: at(day, 7, 30) })
       const bf = BF_FROM + (BF_TO - BF_FROM) * p + (rndBf() - 0.5) * 0.8
-      bodyfat.push({ d: iso, bf: Math.round(Math.max(3, bf) * 10) / 10, t: at(day, 7, 35) })
+      bodyComp.push({ d: iso, v: Math.round(Math.max(3, bf) * 10) / 10, t: at(day, 7, 35) })
     }
 
     const routine = byWeekday[day.getDay()]
@@ -158,7 +158,7 @@ export function buildDemoState() {
     routines: [push, pull, legs],
     week: { 1: push.id, 3: pull.id, 5: legs.id },
     dayPlan,
-    workouts, bodyweight, bodyfat, exWeights,
+    workouts, bodyweight, bodyComp, exWeights,
     targetW: TARGET_W,
     targetBF: TARGET_BF,
     // The history is rated, so the demo turns the column on and the stats get a scale to

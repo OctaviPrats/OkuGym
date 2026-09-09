@@ -24,9 +24,9 @@ export default function Home() {
   const prevBW = S.bodyweight.length > 1 ? S.bodyweight[S.bodyweight.length - 2] : null
   const delta = bw && prevBW ? bw.w - prevBW.w : null
   const bf = lastBF(S)
-  const bodyfat = S.bodyfat || []
+  const bodyfat = S.bodyComp || []
   const prevBF = bodyfat.length > 1 ? bodyfat[bodyfat.length - 2] : null
-  const bfDelta = bf && prevBF ? bf.bf - prevBF.bf : null
+  const bfDelta = bf && prevBF ? bf.bf - prevBF.v : null
 
   const monday = new Date(today); monday.setDate(today.getDate() - ((today.getDay() + 6) % 7) + weekOffset * 7)
   const doneDays = new Set(S.workouts.map(w => w.d))
@@ -45,7 +45,7 @@ export default function Home() {
   const wThisWeek = S.workouts.filter(w => weekKey(w.d) === weekKey(todayISO())).length
   const plannedPerWeek = Object.keys(S.week).filter(k => S.week[k]).length
   const bwPoints = S.bodyweight.slice(-30).map(b => ({ t: b.t || new Date(b.d).getTime(), y: b.w, d: b.d }))
-  const bfPoints = bodyfat.slice(-30).map(b => ({ t: b.t || new Date(b.d).getTime(), y: b.bf, d: b.d }))
+  const bfPoints = bodyfat.slice(-30).map(b => ({ t: b.t || new Date(b.d).getTime(), y: b.v, d: b.d }))
 
   // today's session shown right under the week strip
   const onToday = () => { if (S.active) nav('/workout'); else if (routine) startFlow(routine.id); else dayOverrideSheet(todayISO()) }

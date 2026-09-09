@@ -161,15 +161,15 @@ function BfSheet({ close }) {
     if (!n || n <= 0) { toast(t('Enter a valid body fat percentage')); return }
     update(s => {
       const iso = todayISO()
-      const ex = s.bodyfat.find(b => b.d === iso)
-      if (ex) { ex.bf = n; ex.t = Date.now() } else s.bodyfat.push({ d: iso, bf: n, t: Date.now() })
-      s.bodyfat.sort((a, b) => (a.d < b.d ? -1 : 1))
+      const ex = s.bodyComp.find(b => b.d === iso)
+      if (ex) { ex.v = n; ex.t = Date.now() } else s.bodyComp.push({ d: iso, v: n, t: Date.now() })
+      s.bodyComp.sort((a, b) => (a.d < b.d ? -1 : 1))
     })
     close()
     toast(t('Body fat saved'))
   }
-  const recent = [...st.bodyfat].reverse().slice(0, 3)
-  const delEntry = d => update(s => { s.bodyfat = s.bodyfat.filter(b => b.d !== d) })
+  const recent = [...(st.bodyComp || [])].reverse().slice(0, 3)
+  const delEntry = d => update(s => { s.bodyComp = s.bodyComp.filter(b => b.d !== d) })
   return <>
     <h3>{t('Log body fat')}</h3>
     <div className="muted small">{t('Today') + ', ' + fmtDate(todayISO(), true)}</div>
@@ -181,7 +181,7 @@ function BfSheet({ close }) {
       <div className="list" style={{ gap: 0 }}>
         {recent.map(b => <div key={b.d} className="row between" style={{ padding: '9px 2px', borderBottom: '1px solid var(--sep)' }}>
           <span className="small muted">{fmtDate(b.d, true)}</span>
-          <span className="row" style={{ gap: 12 }}><b>{fmtNum(b.bf)}%</b>
+          <span className="row" style={{ gap: 12 }}><b>{fmtNum(b.v)}%</b>
             <button className="iconbtn" style={{ width: 32, height: 30, borderRadius: 8, fontSize: 15, color: 'var(--red)' }} onClick={() => delEntry(b.d)} aria-label="delete"><Icon name="trash" /></button></span>
         </div>)}
       </div>
