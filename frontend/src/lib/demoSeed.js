@@ -14,6 +14,8 @@ const PROG = {
 const WEEKS = 12                       // how much history to fabricate
 const BW_FROM = 82.4, BW_TO = 78.3     // body-weight trend across those weeks
 const TARGET_W = 77
+const BF_FROM = 21.8, BF_TO = 17.4     // body-fat trend across those weeks
+const TARGET_BF = 16
 
 // --- Effort -----------------------------------------------------------------------------
 // The demo has to show the effort stats, not just the volume ones, so the history carries
@@ -61,6 +63,7 @@ const monday = date => { const d = new Date(date); d.setDate(d.getDate() - ((d.g
 // per-set effort ratings on most (not all) of it.
 export function buildDemoState() {
   const rnd = rng(20260723)
+  const rndBf = rng(20260819)
   const [push, pull, legs] = starterRoutines()
   const byWeekday = { 1: push, 3: pull, 5: legs }
 
@@ -70,6 +73,7 @@ export function buildDemoState() {
 
   const workouts = []
   const bodyweight = []
+  const bodyComp = []
   const exWeights = {}
   const best = {}
 
@@ -83,6 +87,8 @@ export function buildDemoState() {
     if (day.getDay() === 1 || day.getDay() === 4) {
       const w = BW_FROM + (BW_TO - BW_FROM) * p + (rnd() - 0.5) * 0.7
       bodyweight.push({ d: iso, w: Math.round(w * 10) / 10, t: at(day, 7, 30) })
+      const bf = BF_FROM + (BF_TO - BF_FROM) * p + (rndBf() - 0.5) * 0.8
+      bodyComp.push({ d: iso, v: Math.round(Math.max(3, bf) * 10) / 10, t: at(day, 7, 35) })
     }
 
     const routine = byWeekday[day.getDay()]
@@ -152,8 +158,9 @@ export function buildDemoState() {
     routines: [push, pull, legs],
     week: { 1: push.id, 3: pull.id, 5: legs.id },
     dayPlan,
-    workouts, bodyweight, exWeights,
+    workouts, bodyweight, bodyComp, exWeights,
     targetW: TARGET_W,
+    targetBF: TARGET_BF,
     // The history is rated, so the demo turns the column on and the stats get a scale to
     // label their aggregates with instead of guessing one (see displayScale).
     effort: 'rir'

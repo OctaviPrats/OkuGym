@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { modeOf, isTimed, fmtSec, setLabel, defaultConfig, buildSets, exLine, workoutVolume, effortOf, stepEffort, capEffort, isBw, isPerSide, sideReps, repStep } from './history.js'
+import { modeOf, isTimed, fmtSec, setLabel, defaultConfig, buildSets, exLine, workoutVolume, effortOf, stepEffort, capEffort, isBw, isPerSide, sideReps, repStep, lastBW, lastBF } from './history.js'
 import { EXDB } from './exercises.js'
 
 // Real ids out of the shipped catalogue, so the body-part fallback is exercised for real.
@@ -99,6 +99,23 @@ describe('effortOf', () => {
     expect(effortOf({ effort: 'rir' })).toBe('rir')
     expect(effortOf({ effort: 'none' })).toBe('none')
     expect(effortOf({})).toBe('none')
+  })
+
+  describe('last measurements', () => {
+    it('returns the latest body-weight and body-fat entries', () => {
+      const S = {
+        bodyweight: [{ d: '2026-09-01', w: 81.4 }, { d: '2026-09-04', w: 80.9 }],
+        bodyComp: [{ d: '2026-09-02', v: 19.6 }, { d: '2026-09-05', v: 19.1 }]
+      }
+      expect(lastBW(S)).toEqual({ d: '2026-09-04', w: 80.9 })
+      expect(lastBF(S)).toEqual({ d: '2026-09-05', v: 19.1, bf: 19.1 })
+    })
+
+    it('treats missing body-fat history as empty', () => {
+      expect(lastBW({ bodyweight: [] })).toBeNull()
+      expect(lastBF({})).toBeNull()
+      expect(lastBF({ bodyComp: [] })).toBeNull()
+    })
   })
 
   it('keeps the column for a profile still carrying the old showRir flag', () => {

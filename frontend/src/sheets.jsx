@@ -3,7 +3,7 @@ import { useStore } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
 import { EXDB, EXIDX, BODYPARTS, isCardio, isBodyweightEq, allExercises, equipmentOf } from './lib/exercises.js'
 import { fmtDate, fmtNum, fmtVol, fmtDur, durPart, todayISO, uid, exCount, DAYN, MONTHS_LONG, ACCENTS } from './lib/format.js'
-import { lastEntryFor, bestWeightFor, buildSets, effectiveRoutineId, workoutVolume, setsDone, setsDoneActive, lastBW, supersetUnits, unitOf, setLabel, defaultConfig, cleanupSg, modeOf, effortOf, isBw, isPerSide, sideReps } from './lib/history.js'
+import { lastEntryFor, bestWeightFor, buildSets, effectiveRoutineId, workoutVolume, setsDone, setsDoneActive, lastBW, lastBF, supersetUnits, unitOf, setLabel, defaultConfig, cleanupSg, modeOf, effortOf, isBw, isPerSide, sideReps } from './lib/history.js'
 import { beep, vibrate } from './lib/sound.js'
 import { t, instrFor, getLang, INSTR_LANGS } from './lib/i18n.js'
 import { nav } from './lib/nav.js'
@@ -36,6 +36,28 @@ function ConfirmDialog({ title, message, confirmText, cancelText, danger, onConf
     <div style={{ height: 8 }} />
     <Button variant="ghost" className="dim" onClick={close}>{cancelText || t('Cancel')}</Button>
   </div>
+}
+
+const BF_LO = 3
+const BF_HI = 70
+function PercentInput({ value, setValue }) {
+  const clamp = x => Math.max(BF_LO, Math.min(BF_HI, Math.round((x || 0) * 10) / 10))
+  const sv = Math.max(BF_LO, Math.min(BF_HI, value))
+  const onSlide = v => setValue(clamp(v))
+  return <>
+    <div className="bwstep">
+      <button className="bw-pm" onClick={() => onSlide(value - 0.1)} aria-label="minus 0.1"><Icon name="minus" /></button>
+      <div className="bw-read">{fmtNum(value)}<span className="u">%</span></div>
+      <button className="bw-pm" onClick={() => onSlide(value + 0.1)} aria-label="plus 0.1"><Icon name="plus" /></button>
+    </div>
+    <div className="chips" style={{ justifyContent: 'center', margin: '8px 0' }}>
+      <button className="chip" onClick={() => onSlide(value - 1)}>−1</button>
+      <button className="chip" onClick={() => onSlide(value - 0.5)}>−0.5</button>
+      <button className="chip" onClick={() => onSlide(value + 0.5)}>+0.5</button>
+      <button className="chip" onClick={() => onSlide(value + 1)}>+1</button>
+    </div>
+    <Slider value={sv} min={BF_LO} max={BF_HI} step={0.5} onChange={onSlide} />
+  </>
 }
 // Themed replacement for window.confirm — callback-based (no blocking).
 export function confirmSheet(opts) {
@@ -129,6 +151,44 @@ export function bwSheet(opts = {}) {
   const h = ui().openSheet(close => <BwSheet {...opts} close={close} />, { locked: !!opts.required })
   return h
 }
+
+function BfSheet({ close }) {
+  const st = useStore(s => s.S)
+  const bf = lastBF(st)
+  const [v, setV] = useState(bf ? bf.bf : 20)
+  const save = () => {
+    const n = Math.round((v || 0) * 10) / 10
+    if (!n || n <= 0) { toast(t('Enter a valid body fat percentage')); return }
+    update(s => {
+      const iso = todayISO()
+      const ex = s.bodyComp.find(b => b.d === iso)
+      if (ex) { ex.v = n; ex.t = Date.now() } else s.bodyComp.push({ d: iso, v: n, t: Date.now() })
+      s.bodyComp.sort((a, b) => (a.d < b.d ? -1 : 1))
+    })
+    close()
+    toast(t('Body fat saved'))
+  }
+  const recent = [...(st.bodyComp || [])].reverse().slice(0, 3)
+  const delEntry = d => update(s => { s.bodyComp = s.bodyComp.filter(b => b.d !== d) })
+  return <>
+    <h3>{t('Log body fat')}</h3>
+    <div className="muted small">{t('Today') + ', ' + fmtDate(todayISO(), true)}</div>
+    <PercentInput value={v} setValue={setV} />
+    <div style={{ height: 14 }} />
+    <Button variant="primary" onClick={save}>{t('Save')}</Button>
+    {recent.length > 0 && <>
+      <h4 className="sec">{t('Recent body fat entries')}</h4>
+      <div className="list" style={{ gap: 0 }}>
+        {recent.map(b => <div key={b.d} className="row between" style={{ padding: '9px 2px', borderBottom: '1px solid var(--sep)' }}>
+          <span className="small muted">{fmtDate(b.d, true)}</span>
+          <span className="row" style={{ gap: 12 }}><b>{fmtNum(b.v)}%</b>
+            <button className="iconbtn" style={{ width: 32, height: 30, borderRadius: 8, fontSize: 15, color: 'var(--red)' }} onClick={() => delEntry(b.d)} aria-label="delete"><Icon name="trash" /></button></span>
+        </div>)}
+      </div>
+    </>}
+  </>
+}
+export const bfSheet = () => ui().openSheet(close => <BfSheet close={close} />)
 
 /* ============================ import from another app ============================ */
 // Shows what a parsed export would actually do before anything is written. An import is
@@ -236,9 +296,13 @@ export function importFromApp(file, onDone) {
 
 /* ============================ target weight ============================ */
 export function bwDeltaColor(delta, currentW) {
+  return goalDeltaColor(delta, currentW, S().targetW)
+}
+export const bfDeltaColor = (delta, currentBF) => goalDeltaColor(delta, currentBF, S().targetBF)
+const goalDeltaColor = (delta, current, target) => {
   if (!delta) return 'var(--label-2)'
-  if (!S().targetW) return 'var(--label)'
-  const up = S().targetW > currentW
+  if (target == null) return 'var(--label)'
+  const up = target > current
   return (delta > 0) === up ? 'var(--acc)' : 'var(--red)'
 }
 function GoalSheet({ close }) {
@@ -260,6 +324,25 @@ function GoalSheet({ close }) {
   </>
 }
 export const goalSheet = () => ui().openSheet(close => <GoalSheet close={close} />)
+function BfGoalSheet({ close }) {
+  const st = S()
+  const bf = lastBF(st)
+  const [v, setV] = useState(st.targetBF || (bf ? bf.bf : 20))
+  return <>
+    <h3>{t('Target body fat')}</h3>
+    <div className="muted small">{t('Your goal is drawn as a line through the body-fat charts, and changes are colored by whether they move toward it.')}</div>
+    <PercentInput value={v} setValue={setV} />
+    <div style={{ height: 14 }} />
+    <Button variant="primary" onClick={() => {
+      const n = Math.round((v || 0) * 10) / 10
+      if (!n || n <= 0) { toast(t('Enter a valid body fat percentage')); return }
+      update(s => { s.targetBF = n }); close()
+      const b = lastBF(S()); toast(t('Goal set: {0}', fmtNum(n) + '%') + (b ? ' (' + t('{0} to go', fmtNum(Math.abs(n - b.bf)) + '%') + ')' : ''))
+    }}>{t('Save goal')}</Button>
+    {st.targetBF && <><div style={{ height: 8 }} /><Button variant="danger" onClick={() => { update(s => { s.targetBF = null }); close(); toast(t('Goal removed')) }}>{t('Remove goal')}</Button></>}
+  </>
+}
+export const bfGoalSheet = () => ui().openSheet(close => <BfGoalSheet close={close} />)
 
 /* ============================ exercise detail ============================ */
 // Estimated 1RM for one exercise (issue #18): what the log already implies, plus a calculator
