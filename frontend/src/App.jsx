@@ -7,6 +7,7 @@ import { ACCENTS } from './lib/format.js'
 import { setLang, useLang } from './lib/i18n.js'
 import { setNav } from './lib/nav.js'
 import { useWakeLock } from './lib/wakelock.js'
+import { MOBILE } from './lib/mobile.js'
 import { startFlow } from './sheets.jsx'
 import Icon from './components/Icon.jsx'
 import TabBar from './components/TabBar.jsx'
@@ -47,6 +48,32 @@ function Shell() {
   useEffect(() => { document.documentElement.lang = S.lang || 'en' }, [langV, S.lang])
   // every tab/route change starts at the top of the page
   useEffect(() => { window.scrollTo(0, 0) }, [loc.pathname])
+  // Android system-back: close the top sheet first, then in-app navigate, then allow app exit.
+  useEffect(() => {
+    if (!MOBILE) return
+    let off = null
+    let cancelled = false
+    ;(async () => {
+      const { App } = await import('@capacitor/app')
+      const listener = await App.addListener('backButton', ({ canGoBack }) => {
+        const { sheets, closeSheet } = useUI.getState()
+        const top = sheets[sheets.length - 1]
+        if (top) {
+          if (!top.locked) closeSheet(top.id)
+          return
+        }
+        if (canGoBack) { navigate(-1); return }
+        if (authed && loc.pathname !== '/home') { navigate('/home', { replace: true }); return }
+        App.exitApp()
+      })
+      if (cancelled) listener.remove()
+      else off = () => listener.remove()
+    })()
+    return () => {
+      cancelled = true
+      if (off) off()
+    }
+  }, [navigate, authed, loc.pathname])
   // bound to the workout, not to the route — checking Stats mid-session keeps the screen on
   useWakeLock(!!S.active && S.keepAwake !== false)
 
