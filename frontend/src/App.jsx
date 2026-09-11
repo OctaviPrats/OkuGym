@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { HashRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { useStore } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
@@ -6,6 +6,7 @@ import { bindUI } from './components/ui.jsx'
 import { ACCENTS } from './lib/format.js'
 import { setLang, useLang } from './lib/i18n.js'
 import { setNav } from './lib/nav.js'
+import { MOBILE, resolveMobileBackAction } from './lib/mobile.js'
 import { useWakeLock } from './lib/wakelock.js'
 import { startFlow } from './sheets.jsx'
 import Icon from './components/Icon.jsx'
@@ -51,6 +52,41 @@ function Shell() {
   useWakeLock(!!S.active && S.keepAwake !== false)
 
   const authed = user || isGuest
+
+  // Store navigate, auth state, and pathname in refs to avoid stale closures in long-lived listeners
+  const navigateRef = useRef(navigate)
+  const authedRef = useRef(authed)
+  const pathnameRef = useRef(loc.pathname)
+  useEffect(() => { navigateRef.current = navigate }, [navigate])
+  useEffect(() => { authedRef.current = authed }, [authed])
+  useEffect(() => { pathnameRef.current = loc.pathname }, [loc.pathname])
+
+  // Android system-back: close the top sheet first, then in-app navigate, then allow app exit.
+  // Mounted once with empty dependency array to avoid re-registration windows.
+  useEffect(() => {
+    if (!MOBILE) return
+    let off = null
+    let cancelled = false
+    ;(async () => {
+      const { App } = await import('@capacitor/app')
+      const listener = await App.addListener('backButton', ({ canGoBack }) => {
+        const { sheets, closeSheet } = useUI.getState()
+        const historyIndex = Math.max(0, window.history?.state?.idx ?? 0)
+        const action = resolveMobileBackAction({ sheets, canGoBack, historyIndex, authed: authedRef.current, pathname: pathnameRef.current })
+        if (action.type === 'close-sheet') closeSheet(action.id)
+        else if (action.type === 'navigate-back') navigateRef.current(-1)
+        else if (action.type === 'navigate-home') navigateRef.current('/home', { replace: true })
+        else if (action.type === 'exit') App.exitApp()
+      })
+      if (cancelled) listener.remove()
+      else off = () => listener.remove()
+    })()
+    return () => {
+      cancelled = true
+      if (off) off()
+    }
+  }, [])
+
   if (!ready && !authed) return (
     <div id="app">
       <div style={{ paddingTop: '44vh', display: 'flex', justifyContent: 'center', fontSize: 34, color: 'var(--label-3)' }}>
