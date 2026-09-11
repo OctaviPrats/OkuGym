@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { HashRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { useStore } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
@@ -48,6 +48,10 @@ function Shell() {
   useEffect(() => { document.documentElement.lang = S.lang || 'en' }, [langV, S.lang])
   // every tab/route change starts at the top of the page
   useEffect(() => { window.scrollTo(0, 0) }, [loc.pathname])
+  const authedRef = useRef(false)
+  const pathnameRef = useRef('/')
+  authedRef.current = authed
+  pathnameRef.current = loc.pathname
   // Android system-back: close the top sheet first, then in-app navigate, then allow app exit.
   useEffect(() => {
     if (!MOBILE) return
@@ -58,7 +62,7 @@ function Shell() {
       const listener = await App.addListener('backButton', ({ canGoBack }) => {
         const { sheets, closeSheet } = useUI.getState()
         const historyIndex = Math.max(0, window.history?.state?.idx || 0)
-        const action = resolveMobileBackAction({ sheets, canGoBack, historyIndex, authed, pathname: loc.pathname })
+        const action = resolveMobileBackAction({ sheets, canGoBack, historyIndex, authed: authedRef.current, pathname: pathnameRef.current })
         if (action.type === 'close-sheet') closeSheet(action.id)
         else if (action.type === 'navigate-back') navigate(-1)
         else if (action.type === 'navigate-home') navigate('/home', { replace: true })
@@ -71,7 +75,7 @@ function Shell() {
       cancelled = true
       if (off) off()
     }
-  }, [navigate, authed, loc.pathname])
+  }, [navigate])
   // bound to the workout, not to the route — checking Stats mid-session keeps the screen on
   useWakeLock(!!S.active && S.keepAwake !== false)
 
