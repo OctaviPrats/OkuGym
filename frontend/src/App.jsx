@@ -7,7 +7,7 @@ import { ACCENTS } from './lib/format.js'
 import { setLang, useLang } from './lib/i18n.js'
 import { setNav } from './lib/nav.js'
 import { useWakeLock } from './lib/wakelock.js'
-import { MOBILE } from './lib/mobile.js'
+import { MOBILE, resolveMobileBackAction } from './lib/mobile.js'
 import { startFlow } from './sheets.jsx'
 import Icon from './components/Icon.jsx'
 import TabBar from './components/TabBar.jsx'
@@ -57,14 +57,11 @@ function Shell() {
       const { App } = await import('@capacitor/app')
       const listener = await App.addListener('backButton', ({ canGoBack }) => {
         const { sheets, closeSheet } = useUI.getState()
-        const top = sheets[sheets.length - 1]
-        if (top) {
-          if (!top.locked) closeSheet(top.id)
-          return
-        }
-        if (canGoBack) { navigate(-1); return }
-        if (authed && loc.pathname !== '/home') { navigate('/home', { replace: true }); return }
-        App.exitApp()
+        const action = resolveMobileBackAction({ sheets, canGoBack, authed, pathname: loc.pathname })
+        if (action.type === 'close-sheet') closeSheet(action.id)
+        else if (action.type === 'navigate-back') navigate(-1)
+        else if (action.type === 'navigate-home') navigate('/home', { replace: true })
+        else if (action.type === 'exit') App.exitApp()
       })
       if (cancelled) listener.remove()
       else off = () => listener.remove()

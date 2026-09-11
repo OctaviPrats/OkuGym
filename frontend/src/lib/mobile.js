@@ -15,6 +15,14 @@ export const MOBILE = import.meta.env.VITE_MOBILE === '1'
 
 const FILE = 'okugym-state.json'
 
+export function resolveMobileBackAction({ sheets = [], canGoBack = false, authed = false, pathname = '/' }) {
+  const top = sheets[sheets.length - 1]
+  if (top) return top.locked ? { type: 'handled' } : { type: 'close-sheet', id: top.id }
+  if (canGoBack) return { type: 'navigate-back' }
+  if (authed && pathname !== '/home') return { type: 'navigate-home' }
+  return { type: 'exit' }
+}
+
 export async function nativeLoad() {
   try {
     const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem')
