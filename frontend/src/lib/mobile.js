@@ -57,7 +57,7 @@ export async function syncReminder(S, interactive = false) {
       .map(([day, rid]) => ({
         id: 100 + Number(day),
         title: t('Workout day'),
-        body: t('{0} is on the plan today — let’s go!', S.routines.find(x => x.id === rid).name),
+        body: t("{0} is on the plan today — let's go!", S.routines.find(x => x.id === rid).name),
         // Capacitor weekdays are 1 (Sunday) … 7 (Saturday); S.week uses getDay() 0…6.
         schedule: { on: { weekday: Number(day) + 1, hour, minute }, allowWhileIdle: true },
       }))

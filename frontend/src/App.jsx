@@ -6,8 +6,8 @@ import { bindUI } from './components/ui.jsx'
 import { ACCENTS } from './lib/format.js'
 import { setLang, useLang } from './lib/i18n.js'
 import { setNav } from './lib/nav.js'
-import { useWakeLock } from './lib/wakelock.js'
 import { MOBILE, resolveMobileBackAction } from './lib/mobile.js'
+import { useWakeLock } from './lib/wakelock.js'
 import { startFlow } from './sheets.jsx'
 import Icon from './components/Icon.jsx'
 import TabBar from './components/TabBar.jsx'
@@ -49,11 +49,14 @@ function Shell() {
   useEffect(() => { document.documentElement.lang = S.lang || 'en' }, [langV, S.lang])
   // every tab/route change starts at the top of the page
   useEffect(() => { window.scrollTo(0, 0) }, [loc.pathname])
-  const authedRef = useRef(false)
-  const pathnameRef = useRef('/')
-  authedRef.current = authed
-  pathnameRef.current = loc.pathname
+  const navigateRef = useRef(navigate)
+  const authedRef = useRef(authed)
+  const pathnameRef = useRef(loc.pathname)
+  useEffect(() => { navigateRef.current = navigate }, [navigate])
+  useEffect(() => { authedRef.current = authed }, [authed])
+  useEffect(() => { pathnameRef.current = loc.pathname }, [loc.pathname])
   // Android system-back: close the top sheet first, then in-app navigate, then allow app exit.
+  // Mounted once with empty dependency array to avoid re-registration windows.
   useEffect(() => {
     if (!MOBILE) return
     let off = null
@@ -65,8 +68,8 @@ function Shell() {
         const historyIndex = Math.max(0, window.history?.state?.idx ?? 0)
         const action = resolveMobileBackAction({ sheets, canGoBack, historyIndex, authed: authedRef.current, pathname: pathnameRef.current })
         if (action.type === 'close-sheet') closeSheet(action.id)
-        else if (action.type === 'navigate-back') navigate(-1)
-        else if (action.type === 'navigate-home') navigate('/home', { replace: true })
+        else if (action.type === 'navigate-back') navigateRef.current(-1)
+        else if (action.type === 'navigate-home') navigateRef.current('/home', { replace: true })
         else if (action.type === 'exit') App.exitApp()
       })
       if (cancelled) listener.remove()
@@ -76,10 +79,9 @@ function Shell() {
       cancelled = true
       if (off) off()
     }
-  }, [navigate])
+  }, [])
   // bound to the workout, not to the route — checking Stats mid-session keeps the screen on
   useWakeLock(!!S.active && S.keepAwake !== false)
-
   if (!ready && !authed) return (
     <div id="app">
       <div style={{ paddingTop: '44vh', display: 'flex', justifyContent: 'center', fontSize: 34, color: 'var(--label-3)' }}>
