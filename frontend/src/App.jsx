@@ -61,7 +61,7 @@ function Shell() {
       const { App } = await import('@capacitor/app')
       const listener = await App.addListener('backButton', ({ canGoBack }) => {
         const { sheets, closeSheet } = useUI.getState()
-        const historyIndex = Math.max(0, window.history?.state?.idx || 0)
+        const historyIndex = Math.max(0, window.history?.state?.idx ?? 0)
         const action = resolveMobileBackAction({ sheets, canGoBack, historyIndex, authed: authedRef.current, pathname: pathnameRef.current })
         if (action.type === 'close-sheet') closeSheet(action.id)
         else if (action.type === 'navigate-back') navigate(-1)
