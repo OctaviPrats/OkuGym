@@ -14,6 +14,14 @@ describe('resolveMobileBackAction', () => {
     expect(resolveMobileBackAction({ canGoBack: true })).toEqual({ type: 'navigate-back' })
   })
 
+  it('uses router history state to navigate back even if native canGoBack is false', () => {
+    expect(resolveMobileBackAction({ historyIndex: 1 })).toEqual({ type: 'navigate-back' })
+  })
+
+  it('keeps back-navigation priority on non-home routes for authed users', () => {
+    expect(resolveMobileBackAction({ authed: true, pathname: '/stats', canGoBack: true })).toEqual({ type: 'navigate-back' })
+  })
+
   it('navigates home before exit when authed and not on home', () => {
     expect(resolveMobileBackAction({ authed: true, pathname: '/stats' })).toEqual({ type: 'navigate-home' })
   })

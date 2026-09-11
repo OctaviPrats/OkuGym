@@ -15,11 +15,11 @@ export const MOBILE = import.meta.env.VITE_MOBILE === '1'
 
 const FILE = 'okugym-state.json'
 
-export function resolveMobileBackAction({ sheets = [], canGoBack = false, authed = false, pathname = '/' }) {
+export function resolveMobileBackAction({ sheets = [], canGoBack = false, historyIndex = 0, authed = false, pathname = '/' }) {
   const top = sheets[sheets.length - 1]
   if (top) return top.locked ? { type: 'handled' } : { type: 'close-sheet', id: top.id }
-  if (canGoBack) return { type: 'navigate-back' }
-  if (authed && pathname !== '/home') return { type: 'navigate-home' }
+  if (authed && pathname !== '/home') return (historyIndex > 0 || canGoBack) ? { type: 'navigate-back' } : { type: 'navigate-home' }
+  if (historyIndex > 0 || canGoBack) return { type: 'navigate-back' }
   return { type: 'exit' }
 }
 
