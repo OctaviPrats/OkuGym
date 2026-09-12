@@ -15,6 +15,14 @@ export const MOBILE = import.meta.env.VITE_MOBILE === '1'
 
 const FILE = 'okugym-state.json'
 
+export function resolveMobileBackAction({ sheets = [], canGoBack = false, historyIndex = 0, authed = false, pathname = '/' }) {
+  const top = sheets[sheets.length - 1]
+  if (top) return top.locked ? { type: 'handled' } : { type: 'close-sheet', id: top.id }
+  if (authed && pathname !== '/home') return (historyIndex > 0 || canGoBack) ? { type: 'navigate-back' } : { type: 'navigate-home' }
+  if (historyIndex > 0 || canGoBack) return { type: 'navigate-back' }
+  return { type: 'exit' }
+}
+
 export async function nativeLoad() {
   try {
     const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem')
@@ -49,7 +57,7 @@ export async function syncReminder(S, interactive = false) {
       .map(([day, rid]) => ({
         id: 100 + Number(day),
         title: t('Workout day'),
-        body: t('{0} is on the plan today — let's go!', S.routines.find(x => x.id === rid).name),
+        body: t("{0} is on the plan today — let's go!", S.routines.find(x => x.id === rid).name),
         // Capacitor weekdays are 1 (Sunday) … 7 (Saturday); S.week uses getDay() 0…6.
         schedule: { on: { weekday: Number(day) + 1, hour, minute }, allowWhileIdle: true },
       }))
@@ -65,29 +73,4 @@ export async function shareExport(json, filename) {
   const { Share } = await import('@capacitor/share')
   const w = await Filesystem.writeFile({ path: filename, directory: Directory.Cache, data: json, encoding: Encoding.UTF8 })
   await Share.share({ title: filename, url: w.uri })
-}
-
-// Android back action resolver: precedence is (1) close top sheet, (2) navigate back,
-// (3) navigate to /home for authed non-home routes without back history, (4) exit app.
-export function resolveMobileBackAction({ sheets, canGoBack, historyIndex, authed, pathname }) {
-  // 1. Close the top dismissible sheet (if any)
-  if (sheets.length > 0) {
-    const top = sheets[sheets.length - 1]
-    if (top.dismissible !== false) {
-      return { type: 'close-sheet', id: top.id }
-    }
-  }
-
-  // 2. Navigate back when browser history allows
-  if (canGoBack) {
-    return { type: 'navigate-back' }
-  }
-
-  // 3. For authenticated users on non-home routes with no back history, go to /home
-  if (authed && pathname !== '/home') {
-    return { type: 'navigate-home' }
-  }
-
-  // 4. Exit app (at root or guest on login screen)
-  return { type: 'exit' }
 }
