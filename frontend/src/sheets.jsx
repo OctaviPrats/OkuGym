@@ -1,19 +1,22 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
-import { EXDB, EXIDX, BODYPARTS, isCardio, isBodyweightEq, allExercises, equipmentOf } from './lib/exercises.js'
+import { EXDB, EXIDX, BODYPARTS, isCardio, isBodyweightEq, allExercises, equipmentOf, exOr } from './lib/exercises.js'
 import { fmtDate, fmtNum, fmtVol, fmtDur, durPart, todayISO, uid, exCount, DAYN, MONTHS_LONG, ACCENTS } from './lib/format.js'
-import { lastEntryFor, bestWeightFor, buildSets, effectiveRoutineId, workoutVolume, setsDone, setsDoneActive, lastBW, lastBF, supersetUnits, unitOf, setLabel, defaultConfig, cleanupSg, modeOf, effortOf, isBw, isPerSide, sideReps } from './lib/history.js'
+import { lastEntryFor, bestWeightFor, buildSets, effectiveRoutineId, workoutVolume, setsDone, setsDoneActive, lastBW, lastBF, supersetUnits, unitOf, setLabel, defaultConfig, cleanupSg, modeOf, effortOf, isBw, isPerSide, sideReps, nextSet, saveWorkoutEdit } from './lib/history.js'
 import { beep, vibrate } from './lib/sound.js'
 import { t, instrFor, getLang, INSTR_LANGS } from './lib/i18n.js'
 import { nav } from './lib/nav.js'
 import { starterRoutines } from './lib/starter.js'
 import Media, { Thumb } from './components/Media.jsx'
 import Stepper from './components/Stepper.jsx'
+import SetRows from './components/SetRows.jsx'
 import Icon from './components/Icon.jsx'
 import { Button, Slider, Switch, Segmented, SelectRow, Row } from './components/ui.jsx'
 import { glyphOf, GLYPH_GROUPS, DEFAULT_GLYPH } from './lib/glyphs.js'
 import BodyMap from './components/BodyMap.jsx'
+import ExerciseProgress from './components/ExerciseProgress.jsx'
+import { exerciseProgress, hasHistory } from './lib/exprogress.js'
 import { loadOfWorkouts } from './lib/muscles.js'
 import { parseImport, mergeImport } from './lib/import-csv.js'
 import { buildPlanBundle, parsePlan, mergePlan, printPlan } from './lib/plan-share.js'
@@ -377,6 +380,9 @@ function ExerciseDetail({ ex, close }) {
   const st = useStore(s => s.S)
   const last = lastEntryFor(st, ex.id)
   const best = bestWeightFor(st, ex.id)
+  // Opened from the workout screen, the session in progress belongs on the curve too (issue #8).
+  const live = st.active && st.active.entries.find(e => e.id === ex.id)
+  const prog = exerciseProgress(st, ex.id, live && { d: st.active.d, start: st.active.start, entry: live })
   return <>
     <h3 className="capitalize">{ex.n}</h3>
     <Media ex={ex} />
@@ -393,6 +399,7 @@ function ExerciseDetail({ ex, close }) {
       <Button icon="pencil" style={{ flex: 1 }} onClick={() => { close(); customExSheet(ex) }}>{t('Edit')}</Button>
       <Button variant="danger" icon="trash" style={{ flex: 1 }} onClick={() => deleteCustomEx(ex, close)}>{t('Delete')}</Button>
     </div>}
+    {hasHistory(prog) && <><h4 className="sec">{t('Exercise progress')}</h4><ExerciseProgress exId={ex.id} prog={prog} /></>}
     {!isCardio(ex) && <OneRM ex={ex} />}
     {instrFor(ex).length > 0 &&<><h4 className="sec">{t('How to')}{!INSTR_LANGS.includes(getLang()) && <span className="dim" style={{ textTransform: 'none', letterSpacing: 0 }}> · {t('instructions in English')}</span>}</h4><ol className="steps-list">{instrFor(ex).map((s, i) => <li key={i}>{s}</li>)}</ol></>}
   </>
@@ -839,8 +846,11 @@ function DayAssign({ day, close }) {
 export const dayAssignSheet = day => ui().openSheet(close => <DayAssign day={day} close={close} />)
 
 /* ============================ workout detail ============================ */
-function WorkoutDetail({ w, close }) {
+function WorkoutDetail({ w: opened, close }) {
   const st = useStore(s => s.S)
+  // Read back from the store rather than the copy it was opened with, so an edit made on top
+  // of this sheet shows here the moment it is saved.
+  const w = st.workouts.find(x => x.id === opened.id) || opened
   return <>
     <h3>{w.name}</h3>
     <div className="muted small" style={{ marginBottom: 12 }}>{[fmtDate(w.d, true), ...durPart(w.end - w.start), fmtVol(w.vol, st.unit), ...(w.bw ? [fmtNum(w.bw) + ' ' + st.unit] : [])].join(' · ')}</div>
@@ -852,10 +862,84 @@ function WorkoutDetail({ w, close }) {
           <div className="ss">{e.sets.filter(s => s.done).map(s => setLabel(e.id, s, e.target)).join('  ·  ') || t('no sets')}</div></div>
       </div>
     })}
+    <Button icon="pencil" onClick={() => workoutEditSheet(w)}>{t('Edit workout')}</Button>
+    <div style={{ height: 8 }} />
     <Button variant="danger" onClick={() => confirmSheet({ title: t('Delete workout?'), message: t('This removes it from your history for good.'), confirmText: t('Delete'), danger: true, onConfirm: () => { update(s => { s.workouts = s.workouts.filter(x => x.id !== w.id) }); close(); toast(t('Workout deleted')) } })}>{t('Delete workout')}</Button>
   </>
 }
 export const workoutDetailSheet = w => ui().openSheet(close => <WorkoutDetail w={w} close={close} />)
+
+/* ============================ edit a finished workout (issue #9) ============================ */
+// Corrects what was logged: the numbers in each set, which sets were actually done, the
+// working weight confirmed after an exercise, and which exercises are in it at all. Works on
+// a draft, so nothing changes until Save — closing the sheet is the undo. What the workout
+// itself derived when it finished (volume, PRs, remembered weights) is redone on save; see
+// saveWorkoutEdit.
+function WorkoutEdit({ w, close }) {
+  const st = useStore(s => s.S)
+  const [draft, setDraft] = useState(() => JSON.parse(JSON.stringify(w)))
+  const mut = fn => setDraft(d => { const n = JSON.parse(JSON.stringify(d)); fn(n); return n })
+  // Clearing an optional field drops the key, as it does in the workout screen.
+  const setField = (ei, i, f, v) => mut(d => { const s = d.entries[ei].sets[i]; if (v == null) delete s[f]; else s[f] = v })
+  // A set added afterwards is one that was done, so it arrives checked.
+  const addSet = ei => mut(d => { const e = d.entries[ei]; e.sets.push({ ...nextSet(e), done: true }) })
+  const removeSet = ei => mut(d => { const e = d.entries[ei]; if (e.sets.length > 1) e.sets.pop() })
+  // Each entry keeps the scale its sets were rated on; the profile's only decides for an
+  // entry nothing was rated in yet.
+  const effortFor = e => e.sets.some(s => s.rir != null) ? 'rir' : e.sets.some(s => s.rpe != null) ? 'rpe' : effortOf(st)
+  const addExercise = () => {
+    const h = exercisePicker(ex => {
+      h.close()
+      // Planned the way the workout's routine plans it, when it does — the progression engine
+      // judges a session against its target, and a made-up 3 × 10 would read as a miss.
+      const r = st.routines.find(x => x.id === w.routineId)
+      const cfg = { ...((r && r.ex.find(x => x.id === ex.id)) || defaultConfig(ex.id)), id: ex.id }
+      mut(d => d.entries.push({ id: ex.id, sets: buildSets(st, cfg).map(x => ({ ...x, done: true })), topW: null, target: { ...cfg } }))
+    })
+  }
+  const save = () => {
+    if (!draft.entries.some(e => e.sets.some(s => s.done))) { toast(t('Nothing is checked off — delete the workout instead.')); return }
+    update(s => { saveWorkoutEdit(s, JSON.parse(JSON.stringify(draft))) })
+    close()
+    toast(t('Workout updated'))
+  }
+  return <>
+    <h3>{t('Edit workout')}</h3>
+    <div className="muted small" style={{ marginBottom: 4 }}>{w.name} · {fmtDate(w.d, true)}</div>
+    {draft.entries.map((e, ei) => {
+      // a deleted custom exercise keeps the name stamped into its entries (deleteCustomEx)
+      const name = EXIDX[e.id] ? EXIDX[e.id].n : (e.n || exOr(e.id).n)
+      return <div key={ei} className="card wedit" style={{ marginTop: 12, marginBottom: 0 }}>
+        <div className="row between" style={{ marginBottom: 6 }}>
+          <div className="tt capitalize" style={{ fontWeight: 600, minWidth: 0 }}>{name}</div>
+          <button className="iconbtn" style={{ color: 'var(--red)', flex: 'none' }} aria-label={t('Remove exercise')}
+            onClick={() => mut(d => { d.entries.splice(ei, 1) })}><Icon name="trash" /></button>
+        </div>
+        <SetRows entry={e} unit={st.unit} effort={effortFor(e)}
+          onField={(i, f, v) => setField(ei, i, f, v)} onToggle={i => mut(d => { d.entries[ei].sets[i].done = !d.entries[ei].sets[i].done })} />
+        <div style={{ height: 8 }} />
+        <div className="row">
+          <Button size="sm" icon="minus" disabled={e.sets.length <= 1} onClick={() => removeSet(ei)}>{t('Remove set')}</Button>
+          <Button size="sm" icon="plus" onClick={() => addSet(ei)}>{t('Add set')}</Button>
+        </div>
+        {/* Only there when one was confirmed: it counts as a best and pre-fills the next
+            session, so a slip on that slider is as much a wrong input as a slip on a set. */}
+        {e.topW > 0 && <div className="row cfgrow" style={{ marginTop: 12 }}>
+          <Stepper label={t('Working weight ({0})', st.unit)} value={e.topW} step={2.5}
+            onChange={v => mut(d => { d.entries[ei].topW = v })} />
+        </div>}
+      </div>
+    })}
+    {!draft.entries.length && <div className="muted small" style={{ marginTop: 12 }}>{t('No exercises left — add one, or delete the workout instead.')}</div>}
+    <div style={{ height: 12 }} />
+    <Button icon="plus" onClick={addExercise}>{t('Add exercise')}</Button>
+    <div style={{ height: 14 }} />
+    <Button variant="primary" onClick={save}>{t('Save changes')}</Button>
+    <div style={{ height: 8 }} />
+    <Button variant="ghost" className="dim" onClick={close}>{t('Cancel')}</Button>
+  </>
+}
+export const workoutEditSheet = w => ui().openSheet(close => <WorkoutEdit w={w} close={close} />)
 
 /* ============================ calendar ============================ */
 function Calendar({ start, close }) {

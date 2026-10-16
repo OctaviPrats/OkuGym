@@ -582,6 +582,10 @@ h4.sec{
 .setrow.eff3 .stp .num{font-size:14px}
 .setrow.done .n{background:var(--acc);color:var(--on-acc)}
 .setrow.done{opacity:.45}
+/* Editing a finished workout, the checked sets are the record and the unchecked ones are what
+   did not happen — the opposite emphasis of a session in progress. */
+.wedit .setrow.done{opacity:1}
+.wedit .setrow:not(.done){opacity:.45}
 /* why the next target is what it is (issue #17) */
 .progline{
   display:flex;align-items:flex-start;gap:7px;margin:6px 0 2px;
@@ -805,6 +809,13 @@ h4.sec{
 .tile .l .icn{font-size:14px;color:var(--label)}
 .tile .v{font-size:26px;font-weight:600;letter-spacing:-.026em;margin-top:5px;line-height:1.1}
 .tile.tappable:active{background:var(--surface-2)}
+
+/* --- body log averages (7 / 15 / 30 days) --- */
+.avgs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.avg{background:var(--surface-2);border-radius:10px;padding:8px 10px;min-width:0}
+.avg .l{font-size:12px;color:var(--label-2)}
+.avg .v{font-size:17px;font-weight:600;letter-spacing:-.02em;margin-top:2px;white-space:nowrap}
+.avg .n{font-size:11px;color:var(--label-3);margin-top:1px}
 
 /* --- PR badge --- */
 .pr{

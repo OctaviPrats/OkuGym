@@ -6,6 +6,7 @@ import { fmtNum, fmtDate, todayISO, isoOf, weekKey, DAYS } from '../lib/format.j
 import { t, dateLocale } from '../lib/i18n.js'
 import { bwSheet, bfSheet, goalSheet, bfGoalSheet, dayOverrideSheet, calendarSheet, startFlow, loadStarterPlan, bwDeltaColor, bfDeltaColor } from '../sheets.jsx'
 import LineChart from '../components/LineChart.jsx'
+import BodyAverages from '../components/BodyAverages.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button } from '../components/ui.jsx'
 import { glyphOf } from '../lib/glyphs.js'
@@ -118,6 +119,7 @@ export default function Home() {
           </div>
         )}
         <div className="chart" style={{ marginTop: 8 }}><LineChart points={bwPoints} h={130} unit={S.unit} goal={S.targetW} /></div>
+        <BodyAverages log={S.bodyweight} field="w" suffix={' ' + S.unit} />
       </> : <div className="muted small">{t("No entries yet — log your weight to start the curve. It's also asked before every workout.")}</div>}
     </div>
 
@@ -147,6 +149,7 @@ export default function Home() {
           </div>
         )}
         <div className="chart" style={{ marginTop: 8 }}><LineChart points={bfPoints} h={130} unit="%" goal={S.targetBF} /></div>
+        <BodyAverages log={bodyfat} field="v" suffix="%" />
       </> : <div className="muted small">{t('No body-fat entries yet — log one to start the curve.')}</div>}
     </div>
 

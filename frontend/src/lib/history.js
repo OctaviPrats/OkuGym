@@ -203,6 +203,16 @@ export function buildSets(S, cfg) {
   }
   return sets
 }
+// The row "Add set" appends: the last set's numbers, else the target's — never its effort or
+// its check, which describe how that one set went. Older and imported entries have no target.
+export function nextSet(e) {
+  const l = e.sets[e.sets.length - 1]
+  const tg = e.target || {}
+  const m = modeOf({ ...tg, id: e.id })
+  if (m === 'cardio') return { min: l ? l.min : (tg.min || 20), speed: l ? l.speed : (tg.speed || 8), done: false }
+  if (m === 'time') return { sec: l ? l.sec : (tg.sec || 45), w: l ? (l.w || 0) : (tg.weight || 0), done: false }
+  return { w: l ? l.w : 0, r: l ? l.r : tg.reps, done: false }
+}
 export function workoutVolume(w) {
   let v = 0
   // No special case for unilateral work: a per-side set logs its total, so both sides are
@@ -220,11 +230,65 @@ export function setsDoneActive(A) {
   if (A) A.entries.forEach(e => e.sets.forEach(s => { if (s.done) n++ }))
   return n
 }
+
+const topLoad = e => Math.max(0, ...e.sets.filter(s => s.done).map(s => s.w || 0))
+
+/**
+ * Write a corrected version of a finished workout back into S (issue #9).
+ *
+ * The log is what progression, the charts and the 1RM read from, so fixing a set fixes them
+ * with no further work. Three things, though, were worked out once when the workout finished
+ * and have to be worked out again:
+ *   · its volume;
+ *   · its PR flags — judged, as at finish, against every workout before it;
+ *   · the working weight remembered per lift (exWeights), which pre-fills the next session.
+ *     A typo — 1000 for 100 — would otherwise keep reappearing there long after the set was
+ *     fixed, so a remembered weight nothing in the log (or the session in progress) can
+ *     vouch for any more comes down to what can, and a corrected weight that beats it goes
+ *     up, exactly as finishing the workout with it would have done.
+ * Entries left with no finished set are dropped, as they are when a workout finishes.
+ * Returns the stored workout, or null when there is no workout with that id.
+ */
+export function saveWorkoutEdit(S, edited) {
+  const i = S.workouts.findIndex(w => w.id === edited.id)
+  if (i < 0) return null
+  const old = S.workouts[i]
+  const w = { ...edited, entries: edited.entries.filter(e => e.sets.some(s => s.done)) }
+  w.vol = workoutVolume(w)
+  const before = { workouts: S.workouts.slice(0, i) }
+  w.prs = [...new Set(w.entries.filter(e => { const mx = topLoad(e); return mx > 0 && mx > bestWeightFor(before, e.id) }).map(e => e.id))]
+  S.workouts[i] = w
+
+  new Set([...old.entries, ...w.entries].map(e => e.id)).forEach(id => {
+    let backed = bestWeightFor(S, id)
+    ;((S.active && S.active.entries) || []).forEach(e => { if (e.id === id) backed = Math.max(backed, topLoad(e), e.topW || 0) })
+    const cur = S.exWeights[id]
+    if (cur && cur.w > backed) {
+      if (backed > 0) S.exWeights[id] = { ...cur, w: backed }
+      else delete S.exWeights[id]
+    }
+    const e = w.entries.find(x => x.id === id)
+    const mx = e ? Math.max(topLoad(e), e.topW || 0) : 0
+    if (mx > 0 && !(S.exWeights[id] && S.exWeights[id].w >= mx)) S.exWeights[id] = { w: mx, d: w.d }
+  })
+  return w
+}
 const lastOf = xs => (xs.length ? xs[xs.length - 1] : null)
 export const lastBW = S => lastOf(S.bodyweight || [])
 export const lastBF = S => {
   const x = lastOf(S.bodyComp || [])
   return x ? { ...x, bf: x.v } : null
+}
+// Mean of a body log — weigh-ins (`w`) or body fat (`v`) — over the last `days` calendar days,
+// today included (issue #7): "7 days" is today and the six before it, whatever the time.
+// The count travels with the mean, because an average of one weigh-in is a reading, not a
+// trend, and the card has to be able to say which one it is showing.
+export function avgOver(log, field, days, today = todayISO()) {
+  const from = new Date(today + 'T12:00:00')
+  from.setDate(from.getDate() - (days - 1))
+  const lo = isoOf(from)
+  const vs = (log || []).filter(x => x.d >= lo && x.d <= today && x[field] > 0).map(x => x[field])
+  return { avg: vs.length ? vs.reduce((a, b) => a + b, 0) / vs.length : null, n: vs.length }
 }
 
 // Group consecutive items sharing a superset id (sg) into "units" of indices.
