@@ -561,4 +561,10 @@ export default {
   'reps': 'रेप्स',
   'Most reps in a set per workout': 'हर वर्कआउट में एक सेट के सबसे ज़्यादा रेप्स',
   'this workout': 'यह वर्कआउट',
+  'Edit workout': 'वर्कआउट संपादित करें',
+  'Save changes': 'बदलाव सहेजें',
+  'Workout updated': 'वर्कआउट अपडेट हो गया',
+  'Nothing is checked off — delete the workout instead.': 'कुछ भी चेक नहीं है — इसके बजाय वर्कआउट हटाएँ।',
+  'No exercises left — add one, or delete the workout instead.': 'कोई एक्सरसाइज़ नहीं बची — एक जोड़ें, या वर्कआउट हटाएँ।',
+  'Working weight ({0})': 'वर्किंग वज़न ({0})',
 }

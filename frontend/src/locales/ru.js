@@ -561,4 +561,10 @@ export default {
   'reps': 'повт.',
   'Most reps in a set per workout': 'Больше всего повторений в подходе за тренировку',
   'this workout': 'эта тренировка',
+  'Edit workout': 'Изменить тренировку',
+  'Save changes': 'Сохранить изменения',
+  'Workout updated': 'Тренировка обновлена',
+  'Nothing is checked off — delete the workout instead.': 'Ничего не отмечено — лучше удалите тренировку.',
+  'No exercises left — add one, or delete the workout instead.': 'Упражнений не осталось — добавьте одно или удалите тренировку.',
+  'Working weight ({0})': 'Рабочий вес ({0})',
 }

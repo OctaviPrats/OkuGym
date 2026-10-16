@@ -578,4 +578,10 @@ export default {
   'reps': 'Wdh.',
   'Most reps in a set per workout': 'Meiste Wiederholungen in einem Satz pro Training',
   'this workout': 'dieses Training',
+  'Edit workout': 'Training bearbeiten',
+  'Save changes': 'Änderungen speichern',
+  'Workout updated': 'Training aktualisiert',
+  'Nothing is checked off — delete the workout instead.': 'Nichts ist abgehakt — lösche das Training stattdessen.',
+  'No exercises left — add one, or delete the workout instead.': 'Keine Übungen mehr — füge eine hinzu oder lösche das Training.',
+  'Working weight ({0})': 'Arbeitsgewicht ({0})',
 }

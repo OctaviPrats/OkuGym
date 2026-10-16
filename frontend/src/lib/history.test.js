@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { modeOf, isTimed, fmtSec, setLabel, defaultConfig, buildSets, exLine, workoutVolume, effortOf, stepEffort, capEffort, isBw, isPerSide, sideReps, repStep, lastBW, lastBF, avgOver } from './history.js'
+import { modeOf, isTimed, fmtSec, setLabel, defaultConfig, buildSets, exLine, workoutVolume, effortOf, stepEffort, capEffort, isBw, isPerSide, sideReps, repStep, lastBW, lastBF, avgOver, nextSet, saveWorkoutEdit } from './history.js'
 import { EXDB } from './exercises.js'
 
 // Real ids out of the shipped catalogue, so the body-part fallback is exercised for real.
@@ -449,5 +449,113 @@ describe('workoutVolume', () => {
   it('leaves an unloaded bodyweight set at zero volume rather than inventing a number', () => {
     const w = { entries: [{ id: BW, target: { bodyweight: true }, sets: [{ w: 0, r: 20, done: true }] }] }
     expect(workoutVolume(w)).toBe(0)
+  })
+})
+
+describe('nextSet', () => {
+  it('copies the last set’s numbers, not its check or its effort', () => {
+    const e = { id: LIFT, target: { reps: 8 }, sets: [{ w: 60, r: 8, rir: 2, done: true }] }
+    expect(nextSet(e)).toEqual({ w: 60, r: 8, done: false })
+  })
+
+  it('reads each mode in its own fields', () => {
+    expect(nextSet({ id: CARDIO, sets: [{ min: 25, speed: 10, done: true }] })).toEqual({ min: 25, speed: 10, done: false })
+    expect(nextSet({ id: LIFT, target: { mode: 'time' }, sets: [{ sec: 50, w: 10, done: true }] })).toEqual({ sec: 50, w: 10, done: false })
+  })
+
+  it('falls back to the target on an empty entry', () => {
+    expect(nextSet({ id: LIFT, target: { mode: 'time', sec: 30, weight: 5 }, sets: [] })).toEqual({ sec: 30, w: 5, done: false })
+    expect(nextSet({ id: CARDIO, target: {}, sets: [] })).toEqual({ min: 20, speed: 8, done: false })
+  })
+
+  it('does not fall over on an imported entry with no target', () => {
+    expect(nextSet({ id: LIFT, target: null, sets: [{ w: 40, r: 12, done: true }] })).toEqual({ w: 40, r: 12, done: false })
+  })
+})
+
+describe('saveWorkoutEdit (issue #9)', () => {
+  const OTHER = EXDB.find(e => e.bp !== 'cardio' && e.eq !== 'body weight' && e.id !== LIFT).id
+  const mk = () => ({
+    exWeights: { [LIFT]: { w: 1000, d: '2026-09-03' } },
+    active: null,
+    workouts: [
+      { id: 'a', d: '2026-09-01', start: 1, entries: [{ id: LIFT, sets: [{ w: 90, r: 5, done: true }] }], prs: [LIFT], vol: 450 },
+      { id: 'b', d: '2026-09-03', start: 2, entries: [{ id: LIFT, topW: 1000, sets: [{ w: 1000, r: 5, done: true }, { w: 100, r: 5, done: false }] }], prs: [LIFT], vol: 5000 }
+    ]
+  })
+  const fixed = S => {
+    const w = JSON.parse(JSON.stringify(S.workouts[1]))
+    w.entries[0].sets[0].w = 100
+    w.entries[0].topW = 100
+    return w
+  }
+
+  it('replaces the workout in place and recomputes its volume', () => {
+    const S = mk()
+    const out = saveWorkoutEdit(S, fixed(S))
+    expect(S.workouts.map(w => w.id)).toEqual(['a', 'b'])
+    expect(S.workouts[1]).toBe(out)
+    expect(out.vol).toBe(500)
+  })
+
+  it('re-judges the PR flag against the workouts before it', () => {
+    const S = mk()
+    expect(saveWorkoutEdit(S, fixed(S)).prs).toEqual([LIFT])     // 100 still beats 90
+    const w = fixed(S); w.entries[0].sets[0].w = 80
+    expect(saveWorkoutEdit(S, w).prs).toEqual([])                 // 80 does not
+  })
+
+  it('brings a remembered weight the log no longer backs down to what it does', () => {
+    const S = mk()
+    saveWorkoutEdit(S, fixed(S))
+    expect(S.exWeights[LIFT]).toEqual({ w: 100, d: '2026-09-03' })
+  })
+
+  it('raises a remembered weight a corrected set now beats, as finishing would have', () => {
+    const S = mk()
+    S.exWeights[LIFT] = { w: 95, d: '2026-09-03' }
+    const w = fixed(S); w.entries[0].topW = null; w.entries[0].sets[0].w = 102.5
+    saveWorkoutEdit(S, w)
+    expect(S.exWeights[LIFT]).toEqual({ w: 102.5, d: '2026-09-03' })
+  })
+
+  it('keeps a weight confirmed in the session still in progress', () => {
+    const S = mk()
+    S.active = { entries: [{ id: LIFT, topW: 1000, sets: [] }] }
+    saveWorkoutEdit(S, fixed(S))
+    expect(S.exWeights[LIFT].w).toBe(1000)
+  })
+
+  it('forgets the remembered weight of an exercise taken out of its only workout', () => {
+    const S = { exWeights: { [OTHER]: { w: 50, d: '2026-09-01' } }, workouts: [
+      { id: 'x', d: '2026-09-01', start: 1, entries: [{ id: LIFT, sets: [{ w: 60, r: 5, done: true }] }, { id: OTHER, sets: [{ w: 50, r: 5, done: true }] }] }
+    ] }
+    const w = JSON.parse(JSON.stringify(S.workouts[0])); w.entries.splice(1, 1)
+    saveWorkoutEdit(S, w)
+    expect(S.exWeights[OTHER]).toBeUndefined()
+    expect(S.exWeights[LIFT]).toEqual({ w: 60, d: '2026-09-01' })
+  })
+
+  it('drops entries left with nothing checked, as finishing a workout does', () => {
+    const S = mk()
+    const w = fixed(S)
+    w.entries.push({ id: OTHER, sets: [{ w: 40, r: 5, done: false }] })
+    expect(saveWorkoutEdit(S, w).entries.map(e => e.id)).toEqual([LIFT])
+  })
+
+  it('leaves other workouts and other lifts alone', () => {
+    const S = mk()
+    S.exWeights[OTHER] = { w: 77, d: '2026-08-01' }
+    const a = JSON.stringify(S.workouts[0])
+    saveWorkoutEdit(S, fixed(S))
+    expect(JSON.stringify(S.workouts[0])).toBe(a)
+    expect(S.exWeights[OTHER]).toEqual({ w: 77, d: '2026-08-01' })
+  })
+
+  it('does nothing for a workout that is not there', () => {
+    const S = mk()
+    const before = JSON.stringify(S)
+    expect(saveWorkoutEdit(S, { id: 'nope', entries: [] })).toBeNull()
+    expect(JSON.stringify(S)).toBe(before)
   })
 })

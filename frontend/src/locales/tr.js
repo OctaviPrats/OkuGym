@@ -561,4 +561,10 @@ export default {
   'reps': 'tekrar',
   'Most reps in a set per workout': 'Antrenman başına bir setteki en çok tekrar',
   'this workout': 'bu antrenman',
+  'Edit workout': 'Antrenmanı düzenle',
+  'Save changes': 'Değişiklikleri kaydet',
+  'Workout updated': 'Antrenman güncellendi',
+  'Nothing is checked off — delete the workout instead.': 'İşaretli set yok — bunun yerine antrenmanı sil.',
+  'No exercises left — add one, or delete the workout instead.': 'Hiç egzersiz kalmadı — bir tane ekle ya da antrenmanı sil.',
+  'Working weight ({0})': 'Çalışma ağırlığı ({0})',
 }

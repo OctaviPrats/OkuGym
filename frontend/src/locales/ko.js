@@ -561,4 +561,10 @@ export default {
   'reps': '회',
   'Most reps in a set per workout': '운동별 한 세트 최다 반복',
   'this workout': '이번 운동',
+  'Edit workout': '운동 편집',
+  'Save changes': '변경 사항 저장',
+  'Workout updated': '운동이 업데이트되었습니다',
+  'Nothing is checked off — delete the workout instead.': '체크된 세트가 없습니다 — 대신 운동을 삭제하세요.',
+  'No exercises left — add one, or delete the workout instead.': '남은 운동 동작이 없습니다 — 하나를 추가하거나 운동을 삭제하세요.',
+  'Working weight ({0})': '작업 중량 ({0})',
 }

@@ -582,6 +582,10 @@ h4.sec{
 .setrow.eff3 .stp .num{font-size:14px}
 .setrow.done .n{background:var(--acc);color:var(--on-acc)}
 .setrow.done{opacity:.45}
+/* Editing a finished workout, the checked sets are the record and the unchecked ones are what
+   did not happen — the opposite emphasis of a session in progress. */
+.wedit .setrow.done{opacity:1}
+.wedit .setrow:not(.done){opacity:.45}
 /* why the next target is what it is (issue #17) */
 .progline{
   display:flex;align-items:flex-start;gap:7px;margin:6px 0 2px;

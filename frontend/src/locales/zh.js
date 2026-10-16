@@ -561,4 +561,10 @@ export default {
   'reps': '次',
   'Most reps in a set per workout': '每次训练单组最多次数',
   'this workout': '本次训练',
+  'Edit workout': '编辑训练',
+  'Save changes': '保存更改',
+  'Workout updated': '训练已更新',
+  'Nothing is checked off — delete the workout instead.': '没有勾选任何一组——请改为删除这次训练。',
+  'No exercises left — add one, or delete the workout instead.': '没有剩余的动作——添加一个，或删除这次训练。',
+  'Working weight ({0})': '工作重量（{0}）',
 }

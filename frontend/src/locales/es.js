@@ -570,4 +570,10 @@ export default {
   'reps': 'reps',
   'Most reps in a set per workout': 'Más reps en una serie por entrenamiento',
   'this workout': 'este entrenamiento',
+  'Edit workout': 'Editar entrenamiento',
+  'Save changes': 'Guardar cambios',
+  'Workout updated': 'Entrenamiento actualizado',
+  'Nothing is checked off — delete the workout instead.': 'No hay ninguna serie marcada: elimina el entrenamiento en su lugar.',
+  'No exercises left — add one, or delete the workout instead.': 'No quedan ejercicios: añade uno o elimina el entrenamiento.',
+  'Working weight ({0})': 'Peso de trabajo ({0})',
 }

@@ -561,4 +561,10 @@ export default {
   'reps': 'reps',
   'Most reps in a set per workout': 'Plus de reps en une série par séance',
   'this workout': 'cette séance',
+  'Edit workout': 'Modifier la séance',
+  'Save changes': 'Enregistrer les modifications',
+  'Workout updated': 'Séance mise à jour',
+  'Nothing is checked off — delete the workout instead.': 'Rien n’est coché — supprime plutôt la séance.',
+  'No exercises left — add one, or delete the workout instead.': 'Plus aucun exercice — ajoutes-en un ou supprime la séance.',
+  'Working weight ({0})': 'Charge de travail ({0})',
 }
