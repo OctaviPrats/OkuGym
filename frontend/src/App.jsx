@@ -41,6 +41,7 @@ function Shell() {
   const loc = useLocation()
   const { S, user, ready } = useStore()
   const isGuest = useStore(s => s.isGuest())
+  const authed = user || isGuest
   const langV = useLang()   // re-renders the whole shell when the language (pack) changes
   useEffect(() => { setNav(navigate) }, [navigate])
   useEffect(() => { applyPrefs(S.theme, S.accent) }, [S.theme, S.accent])
@@ -48,19 +49,12 @@ function Shell() {
   useEffect(() => { document.documentElement.lang = S.lang || 'en' }, [langV, S.lang])
   // every tab/route change starts at the top of the page
   useEffect(() => { window.scrollTo(0, 0) }, [loc.pathname])
-  // bound to the workout, not to the route — checking Stats mid-session keeps the screen on
-  useWakeLock(!!S.active && S.keepAwake !== false)
-
-  const authed = user || isGuest
-
-  // Store navigate, auth state, and pathname in refs to avoid stale closures in long-lived listeners
   const navigateRef = useRef(navigate)
   const authedRef = useRef(authed)
   const pathnameRef = useRef(loc.pathname)
   useEffect(() => { navigateRef.current = navigate }, [navigate])
   useEffect(() => { authedRef.current = authed }, [authed])
   useEffect(() => { pathnameRef.current = loc.pathname }, [loc.pathname])
-
   // Android system-back: close the top sheet first, then in-app navigate, then allow app exit.
   // Mounted once with empty dependency array to avoid re-registration windows.
   useEffect(() => {
@@ -86,7 +80,8 @@ function Shell() {
       if (off) off()
     }
   }, [])
-
+  // bound to the workout, not to the route — checking Stats mid-session keeps the screen on
+  useWakeLock(!!S.active && S.keepAwake !== false)
   if (!ready && !authed) return (
     <div id="app">
       <div style={{ paddingTop: '44vh', display: 'flex', justifyContent: 'center', fontSize: 34, color: 'var(--label-3)' }}>
