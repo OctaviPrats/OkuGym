@@ -9,6 +9,8 @@ import { beep, vibrate } from '../lib/sound.js'
 import { t } from '../lib/i18n.js'
 import { api } from '../lib/api.js'
 import Media from '../components/Media.jsx'
+import ExerciseProgress from '../components/ExerciseProgress.jsx'
+import { exerciseProgress, hasHistory } from '../lib/exprogress.js'
 import { startFlow, exercisePicker, exConfigSheet, exerciseDetailSheet, topWeightSheet, finishWorkout, workoutCompleteSheet, confirmSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button, Check, NumberField } from '../components/ui.jsx'
@@ -69,6 +71,9 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
   // What the progression policy decided for this session, and why (issue #17). Computed when
   // the session was built so the reason matches the numbers already in the rows.
   const plan = entry.plan
+  // Today's sets on the curve next to every session before them, filling in as they are
+  // checked off (issue #8). Below the sets rather than above, so it never pushes them down.
+  const prog = exerciseProgress(S, entry.id, { d: S.active.d, start: S.active.start, entry })
   // A bodyweight set has no weight to type, so the column is not there (issue #32) — one
   // stepper instead of two, which is the whole point of the flag. Adding a belt weight in the
   // config brings it back, now labelled as the addition it is.
@@ -148,6 +153,10 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
         <Button size="sm" icon="plus" onClick={onAddSet}>{t('Add set')}</Button>
       </div>
     </div>
+    {hasHistory(prog) && <div className="card" style={{ marginTop: 10, marginBottom: 0 }}>
+      <h2>{t('Exercise progress')}</h2>
+      <ExerciseProgress exId={entry.id} prog={prog} compact />
+    </div>}
   </>
 }
 

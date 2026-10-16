@@ -558,4 +558,7 @@ export default {
   '{0} days': '{0} dias',
   '{0} entry': '{0} registo',
   '{0} entries': '{0} registos',
+  'reps': 'reps',
+  'Most reps in a set per workout': 'Mais reps numa série por treino',
+  'this workout': 'este treino',
 }

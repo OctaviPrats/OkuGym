@@ -558,4 +558,7 @@ export default {
   '{0} days': '{0} दिन',
   '{0} entry': '{0} प्रविष्टि',
   '{0} entries': '{0} प्रविष्टियाँ',
+  'reps': 'रेप्स',
+  'Most reps in a set per workout': 'हर वर्कआउट में एक सेट के सबसे ज़्यादा रेप्स',
+  'this workout': 'यह वर्कआउट',
 }

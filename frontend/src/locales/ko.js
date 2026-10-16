@@ -558,4 +558,7 @@ export default {
   '{0} days': '{0}일',
   '{0} entry': '{0}개 기록',
   '{0} entries': '{0}개 기록',
+  'reps': '회',
+  'Most reps in a set per workout': '운동별 한 세트 최다 반복',
+  'this workout': '이번 운동',
 }

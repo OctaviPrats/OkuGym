@@ -558,4 +558,7 @@ export default {
   '{0} days': '{0} 天',
   '{0} entry': '{0} 条记录',
   '{0} entries': '{0} 条记录',
+  'reps': '次',
+  'Most reps in a set per workout': '每次训练单组最多次数',
+  'this workout': '本次训练',
 }

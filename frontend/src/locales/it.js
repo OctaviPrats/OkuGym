@@ -558,4 +558,7 @@ export default {
   '{0} days': '{0} giorni',
   '{0} entry': '{0} misura',
   '{0} entries': '{0} misure',
+  'reps': 'rip.',
+  'Most reps in a set per workout': 'Più ripetizioni in una serie per allenamento',
+  'this workout': 'questo allenamento',
 }

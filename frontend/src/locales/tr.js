@@ -558,4 +558,7 @@ export default {
   '{0} days': '{0} gün',
   '{0} entry': '{0} kayıt',
   '{0} entries': '{0} kayıt',
+  'reps': 'tekrar',
+  'Most reps in a set per workout': 'Antrenman başına bir setteki en çok tekrar',
+  'this workout': 'bu antrenman',
 }

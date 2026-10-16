@@ -558,4 +558,7 @@ export default {
   '{0} days': '{0} дн.',
   '{0} entry': '{0} запись',
   '{0} entries': '{0} зап.',
+  'reps': 'повт.',
+  'Most reps in a set per workout': 'Больше всего повторений в подходе за тренировку',
+  'this workout': 'эта тренировка',
 }
