@@ -806,6 +806,13 @@ h4.sec{
 .tile .v{font-size:26px;font-weight:600;letter-spacing:-.026em;margin-top:5px;line-height:1.1}
 .tile.tappable:active{background:var(--surface-2)}
 
+/* --- body log averages (7 / 15 / 30 days) --- */
+.avgs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.avg{background:var(--surface-2);border-radius:10px;padding:8px 10px;min-width:0}
+.avg .l{font-size:12px;color:var(--label-2)}
+.avg .v{font-size:17px;font-weight:600;letter-spacing:-.02em;margin-top:2px;white-space:nowrap}
+.avg .n{font-size:11px;color:var(--label-3);margin-top:1px}
+
 /* --- PR badge --- */
 .pr{
   display:inline-flex;align-items:center;gap:4px;

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { modeOf, isTimed, fmtSec, setLabel, defaultConfig, buildSets, exLine, workoutVolume, effortOf, stepEffort, capEffort, isBw, isPerSide, sideReps, repStep, lastBW, lastBF } from './history.js'
+import { modeOf, isTimed, fmtSec, setLabel, defaultConfig, buildSets, exLine, workoutVolume, effortOf, stepEffort, capEffort, isBw, isPerSide, sideReps, repStep, lastBW, lastBF, avgOver } from './history.js'
 import { EXDB } from './exercises.js'
 
 // Real ids out of the shipped catalogue, so the body-part fallback is exercised for real.
@@ -115,6 +115,44 @@ describe('effortOf', () => {
       expect(lastBW({ bodyweight: [] })).toBeNull()
       expect(lastBF({})).toBeNull()
       expect(lastBF({ bodyComp: [] })).toBeNull()
+    })
+  })
+
+  describe('avgOver (issue #7)', () => {
+    const TODAY = '2026-09-30'
+    const bw = [
+      { d: '2026-08-31', w: 90 },   // 31 days back — outside every window
+      { d: '2026-09-01', w: 84 },   // day 30 of the 30-day window
+      { d: '2026-09-16', w: 82 },   // day 15 of the 15-day window
+      { d: '2026-09-24', w: 81 },   // day 7 of the 7-day window
+      { d: '2026-09-30', w: 80 }    // today
+    ]
+
+    it('counts calendar days back from today, today included', () => {
+      expect(avgOver(bw, 'w', 7, TODAY)).toEqual({ avg: 80.5, n: 2 })
+      expect(avgOver(bw, 'w', 15, TODAY)).toEqual({ avg: 81, n: 3 })
+      expect(avgOver(bw, 'w', 30, TODAY)).toEqual({ avg: 81.75, n: 4 })
+    })
+
+    it('reads body fat through the same door', () => {
+      const bf = [{ d: '2026-09-20', v: 20 }, { d: '2026-09-29', v: 19 }, { d: '2026-09-30', v: 18 }]
+      expect(avgOver(bf, 'v', 7, TODAY)).toEqual({ avg: 18.5, n: 2 })
+    })
+
+    it('says "no data" rather than averaging nothing into a zero', () => {
+      expect(avgOver(bw, 'w', 7, '2026-12-31')).toEqual({ avg: null, n: 0 })
+      expect(avgOver([], 'w', 30, TODAY)).toEqual({ avg: null, n: 0 })
+      expect(avgOver(undefined, 'v', 30, TODAY)).toEqual({ avg: null, n: 0 })
+    })
+
+    it('ignores entries dated after today and junk values', () => {
+      const log = [{ d: '2026-10-01', w: 70 }, { d: '2026-09-30', w: 0 }, { d: '2026-09-29', w: 80 }]
+      expect(avgOver(log, 'w', 7, TODAY)).toEqual({ avg: 80, n: 1 })
+    })
+
+    it('crosses a month boundary without losing a day', () => {
+      const log = [{ d: '2026-02-23', w: 70 }, { d: '2026-02-22', w: 99 }]
+      expect(avgOver(log, 'w', 7, '2026-03-01')).toEqual({ avg: 70, n: 1 })
     })
   })
 

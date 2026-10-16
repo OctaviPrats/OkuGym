@@ -554,4 +554,8 @@ export default {
   '{0} sets of {1} — time to add weight or move to a harder variation.': '{0} séries de {1} — hora de acrescentar peso ou passar a uma variação mais difícil.',
   '{0} per side': '{0} por lado',
   'You still log the total: {0} is {1} per side.': 'Continuas a registar o total: {0} são {1} por lado.',
+  'Average': 'Média',
+  '{0} days': '{0} dias',
+  '{0} entry': '{0} registo',
+  '{0} entries': '{0} registos',
 }

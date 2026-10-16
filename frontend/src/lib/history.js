@@ -226,6 +226,17 @@ export const lastBF = S => {
   const x = lastOf(S.bodyComp || [])
   return x ? { ...x, bf: x.v } : null
 }
+// Mean of a body log — weigh-ins (`w`) or body fat (`v`) — over the last `days` calendar days,
+// today included (issue #7): "7 days" is today and the six before it, whatever the time.
+// The count travels with the mean, because an average of one weigh-in is a reading, not a
+// trend, and the card has to be able to say which one it is showing.
+export function avgOver(log, field, days, today = todayISO()) {
+  const from = new Date(today + 'T12:00:00')
+  from.setDate(from.getDate() - (days - 1))
+  const lo = isoOf(from)
+  const vs = (log || []).filter(x => x.d >= lo && x.d <= today && x[field] > 0).map(x => x[field])
+  return { avg: vs.length ? vs.reduce((a, b) => a + b, 0) / vs.length : null, n: vs.length }
+}
 
 // Group consecutive items sharing a superset id (sg) into "units" of indices.
 // items may be routine exercises ({sg}) or active-workout entries ({sg}).

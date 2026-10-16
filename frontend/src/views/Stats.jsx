@@ -7,6 +7,7 @@ import { fmtNum, fmtDate, fmtVol, todayISO, weekKey } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 import { bwSheet, bfSheet, goalSheet, bfGoalSheet, calendarSheet, workoutDetailSheet, WorkoutRow, bwDeltaColor, bfDeltaColor } from '../sheets.jsx'
 import LineChart from '../components/LineChart.jsx'
+import BodyAverages from '../components/BodyAverages.jsx'
 import Heatmap from '../components/Heatmap.jsx'
 import Icon from '../components/Icon.jsx'
 import BodyMap, { BodyMapLegend } from '../components/BodyMap.jsx'
@@ -231,6 +232,7 @@ export default function Stats() {
         <Segmented className="seg-range" value={range} onChange={setRange}
           options={[{ value: 30, label: '1M' }, { value: 90, label: '3M' }, { value: 365, label: '1Y' }, { value: 0, label: t('All') }]} />
         <div className="chart"><LineChart points={bwPts} h={160} unit={S.unit} goal={S.targetW} /></div>
+        {S.bodyweight.length > 0 && <BodyAverages log={S.bodyweight} field="w" suffix={' ' + S.unit} />}
       </div>
 
       <div className="card">
@@ -244,6 +246,7 @@ export default function Stats() {
         <Segmented className="seg-range" value={range} onChange={setRange}
           options={[{ value: 30, label: '1M' }, { value: 90, label: '3M' }, { value: 365, label: '1Y' }, { value: 0, label: t('All') }]} />
         <div className="chart"><LineChart points={bfPts} h={160} unit="%" goal={S.targetBF} /></div>
+        {bodyfat.length > 0 && <BodyAverages log={bodyfat} field="v" suffix="%" />}
       </div>
 
       <div className="card">
