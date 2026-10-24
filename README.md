@@ -58,6 +58,7 @@ as a home-screen app, passkey sign-in, offline support, sync across your phone a
 ## Features
 
 - ⚖️ **Body-weight tracking** — interactive chart with a goal line you set, gains/losses colored by whether they move toward it
+- 🍽️ **Calorie target & food log** — a daily target worked out from your weight, body fat and training plan (Katch-McArdle or Mifflin-St Jeor, a deficit you choose, macros in grams), and a food log where you *describe* a meal and AI fills in the calories and macros for you to check. The AI is free with your own key (Gemini, Groq, OpenRouter or a local Ollama), called straight from your device — no server, and the key never leaves it. What you eat often is one tap the second time
 - 🏋️ **Weekly plan** — a routine per weekday, over a library of **1,324 exercises** (searchable, with animated demos)
 - 🗓️ **Reschedule any day** — sick, missed a session, or fewer gym days this week? Move a workout to another day without touching your weekly plan
 - ▶️ **Guided workouts** — it knows what day it is and starts today's session; asks your body weight first, pre-fills your weights from last time, rest timer, PR detection, per-exercise weight tracking

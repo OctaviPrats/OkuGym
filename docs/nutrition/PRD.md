@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Estado** | Borrador para revisión |
+| **Estado** | Aprobado. **Fase 1 implementada** (`src/lib/nutrition.js`, `src/lib/ai.js`, pestaña Comida); fases 2 y 3 pendientes |
 | **Fecha** | 24 oct 2026 |
 | **Alcance v1** | Déficit calórico (dieta hipocalórica). Mantenimiento y volumen quedan preparados en el modelo de datos, sin UI |
 | **Contexto de uso** | La app se usa en local (APK o navegador en modo invitado), **sin servidor**. Todo lo de esta feature tiene que funcionar así, y **gratis** |
@@ -59,7 +59,7 @@ otra mitad, lo que comes. Esta feature añade:
 - **Persona principal:** alguien que entrena 3–4 días por semana con OkuGym, quiere bajar grasa sin perder
   fuerza, y no sabe (ni quiere aprender) tablas nutricionales.
 - **Escenarios clave**
-  1. *Primera vez:* configura su objetivo con la calculadora → ve "1890 kcal · P 160 · G 64 · C 168".
+  1. *Primera vez:* configura su objetivo con la calculadora → ve "1890 kcal · P 160 · G 64 · C 169".
   2. *Desayuno fuera:* describe lo que ha tomado en una frase → revisa la estimación → la añade.
   3. *Lo de siempre:* repite el desayuno de ayer con un toque, o elige un favorito.
   4. *Producto envasado:* escanea el código de barras → elige la cantidad.
@@ -208,7 +208,7 @@ para la lógica que decide números.
 
 **Ejemplo (persona de ejemplo, no datos reales):** 80 kg, 22 % de grasa, trabajo sentado, 3 entrenos/semana.
 Masa magra 62,4 kg → BMR 1718 → TDEE (×1,375) 2362 → déficit moderado −20 % → **1890 kcal** (−472 kcal/día,
-≈ 0,43 kg/semana). Macros: **P 160 g** (640 kcal) · **G 64 g** (576 kcal) · **C 168 g** (672 kcal).
+≈ 0,43 kg/semana). Macros: **P 160 g** (640 kcal) · **G 64 g** (576 kcal) · **C 169 g** (676 kcal).
 
 ### 6.5 Gasto adaptativo (fase 3)
 
@@ -299,27 +299,26 @@ Todo dentro del estado del perfil (`S`), como el resto de la app: se sincroniza 
 el backup JSON y en el espejo de fichero del APK.
 
 ```js
+// Tal como está implementado en la fase 1 (ver la cabecera de src/lib/nutrition.js)
 S.nutrition = {
-  profile: { sex: 'male', birthYear: null, heightCm: null, activity: 'light' },
+  profile: { sex: 'male', birthYear: null, heightCm: null, activity: 'light', method: 'auto' },
   goals: [                                   // historial: cada día se evalúa con el objetivo vigente ese día
-    { from: '2026-10-24', mode: 'cut', method: 'katch', tdee: 2362, deficitPct: 20,
-      kcal: 1890, p: 160, f: 64, c: 168 }
+    { from: '2026-10-24', mode: 'cut', method: 'katch', bmr: 1718, tdee: 2362, pct: 20,
+      kcal: 1890, p: 160, f: 64, c: 169, pPerKg: 2, fPerKg: 0.8 }
   ],
-  slots: ['breakfast', 'lunch', 'snack', 'dinner'],   // nombres editables vía `slotNames`
-  ai: { on: true, provider: 'gemini', model: '<id del modelo>', search: true },   // la clave NO va aquí (§7.1)
-  foods: [                                   // "Mis alimentos"
-    { id, name, brand, src: 'ai' | 'off' | 'base' | 'user', barcode,
-      per: { g: 100 }, kcal, p, f, c, fiber,
-      servings: [{ label: 'Grande', g: 473 }], fav: false, uses: 12, last: '2026-10-24' }
+  ai: { on: true, provider: 'gemini', model: '<id del modelo>', base: null },   // la clave NO va aquí (§7.1)
+  foods: [                                   // "Mis alimentos": valores de UNA ración
+    { id, name, brand, serving: '1 Grande (473 ml)', kcal: 150, p: 11, f: 5, c: 15,
+      src: 'ai' | 'user', fav: false, uses: 12, last: '2026-10-24' }
   ],
-  meals: [ { id, name, items: [{ foodId, qty, serving }] } ],      // comidas guardadas (fase 2)
-  log: {
+  log: {                                     // comidas fijas: breakfast · lunch · snack · dinner
     '2026-10-24': [
-      { id, t, slot: 'breakfast', foodId, name, qty: 1, serving: 'Grande', g: 473,
-        kcal: 150, p: 11, f: 5, c: 15, src: 'ai', conf: 'high' }
+      { id, t, slot: 'breakfast', foodId, name, brand, serving: '1 Grande (473 ml)', qty: 1,
+        kcal: 150, p: 11, f: 5, c: 15, src: 'ai' | 'user' | 'quick' }
     ]
   }
 }
+// Fase 2 añadirá: barcode y valores por 100 g en foods (Open Food Facts), meals (comidas guardadas)
 ```
 
 - **Cada entrada guarda una copia de sus valores** (kcal y macros) además del `foodId`: editar un alimento después

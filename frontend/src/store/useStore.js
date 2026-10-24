@@ -4,6 +4,7 @@ import { localTZ } from '../lib/format.js'
 import { registerCustom } from '../lib/exercises.js'
 import { DEMO, DEMO_SEEDED } from '../lib/demo.js'
 import { MOBILE, nativeLoad, nativeSave, syncReminder } from '../lib/mobile.js'
+import { setKey } from '../lib/ai.js'
 
 const KEY = 'gym_state_v1'
 export const DEF = {
@@ -15,7 +16,9 @@ export const DEF = {
   // that a profile which never chose (loaded state is overlaid on DEF, on every path: local,
   // server pull, backup import) still falls back to the `showRir` boolean this replaced and
   // keeps the column it had. See effortOf.
-  reminder: { on: false, time: '08:00', tz: null }, effort: null
+  reminder: { on: false, time: '08:00', tz: null }, effort: null,
+  // calorie target + food log (lib/nutrition.js); null until the calculator is first used
+  nutrition: null
 }
 const clone = o => JSON.parse(JSON.stringify(o))
 
@@ -75,6 +78,7 @@ export const useStore = create((set, get) => {
     get().setUser(null)
     localStorage.removeItem('gym_guest')
     localStorage.removeItem('gym_dirty')
+    setKey('')   // the AI provider key lives outside S, so wiping S alone would leave it behind
     localStorage.removeItem(KEY)
     persist(clone(DEF), false)
   }
