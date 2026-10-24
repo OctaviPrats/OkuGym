@@ -737,4 +737,10 @@ export default {
   'gentle deficit': '가벼운 적자',
   'moderate deficit': '적당한 적자',
   'aggressive deficit': '강한 적자',
+  // estimate progress
+  'Asking {0}…': '{0}에 묻는 중…',
+  'Asking {0} again…': '{0}에 다시 묻는 중…',
+  'Reading the answer…': '답변 읽는 중…',
+  'Free models can be slow at busy times — still working on it.': '무료 모델은 사용자가 많은 시간에 느릴 수 있어요 — 아직 처리 중이에요.',
+  'The AI took too long to answer. Try again, or use quick add.': 'AI 응답이 너무 오래 걸렸어요. 다시 시도하거나 빠른 추가를 이용하세요.',
 }

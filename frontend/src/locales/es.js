@@ -749,4 +749,10 @@ export default {
   'No usable model found on this account.': 'No hay ningún modelo disponible en esta cuenta.',
   'Couldn’t read the AI’s answer — try again, or describe it differently.': 'No se ha podido leer la respuesta de la IA: vuelve a probar o descríbelo de otra forma.',
   'The AI provider returned an error ({0}).': 'El proveedor de IA ha devuelto un error ({0}).',
+  // estimate progress
+  'Asking {0}…': 'Preguntando a {0}…',
+  'Asking {0} again…': 'Volviendo a preguntar a {0}…',
+  'Reading the answer…': 'Leyendo la respuesta…',
+  'Free models can be slow at busy times — still working on it.': 'Los modelos gratuitos pueden ir lentos en horas punta; sigue trabajando.',
+  'The AI took too long to answer. Try again, or use quick add.': 'La IA ha tardado demasiado en responder. Vuelve a probar o usa «Añadir rápido».',
 }

@@ -737,4 +737,10 @@ export default {
   'gentle deficit': 'łagodny deficyt',
   'moderate deficit': 'umiarkowany deficyt',
   'aggressive deficit': 'agresywny deficyt',
+  // estimate progress
+  'Asking {0}…': 'Pytanie do: {0}…',
+  'Asking {0} again…': 'Ponowne pytanie do: {0}…',
+  'Reading the answer…': 'Odczytywanie odpowiedzi…',
+  'Free models can be slow at busy times — still working on it.': 'Darmowe modele bywają wolne w godzinach szczytu — wciąż trwa praca.',
+  'The AI took too long to answer. Try again, or use quick add.': 'Odpowiedź AI trwała zbyt długo. Spróbuj ponownie albo użyj szybkiego dodawania.',
 }

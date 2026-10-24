@@ -737,4 +737,10 @@ export default {
   'gentle deficit': 'hafif açık',
   'moderate deficit': 'orta açık',
   'aggressive deficit': 'agresif açık',
+  // estimate progress
+  'Asking {0}…': 'Soruluyor: {0}…',
+  'Asking {0} again…': 'Yeniden soruluyor: {0}…',
+  'Reading the answer…': 'Yanıt okunuyor…',
+  'Free models can be slow at busy times — still working on it.': 'Ücretsiz modeller yoğun saatlerde yavaş olabilir — hâlâ çalışıyor.',
+  'The AI took too long to answer. Try again, or use quick add.': 'Yapay zeka yanıt vermekte çok gecikti. Tekrar dene ya da hızlı eklemeyi kullan.',
 }

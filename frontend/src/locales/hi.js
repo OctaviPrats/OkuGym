@@ -737,4 +737,10 @@ export default {
   'gentle deficit': 'हल्की कमी',
   'moderate deficit': 'मध्यम कमी',
   'aggressive deficit': 'तेज़ कमी',
+  // estimate progress
+  'Asking {0}…': '{0} से पूछ रहे हैं…',
+  'Asking {0} again…': '{0} से फिर से पूछ रहे हैं…',
+  'Reading the answer…': 'जवाब पढ़ रहे हैं…',
+  'Free models can be slow at busy times — still working on it.': 'व्यस्त समय में मुफ़्त मॉडल धीमे हो सकते हैं — अभी भी काम चल रहा है।',
+  'The AI took too long to answer. Try again, or use quick add.': 'AI ने जवाब देने में बहुत देर लगा दी। फिर से कोशिश करें, या झटपट एंट्री का इस्तेमाल करें।',
 }

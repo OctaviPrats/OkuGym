@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { parseEstimate, pickModels, buildEstimateRequest, estimateMeal, connect, baseOf, AiError } from './ai.js'
+import { describe, it, expect, vi, afterEach } from 'vitest'
+import { parseEstimate, pickModels, buildEstimateRequest, estimateMeal, connect, baseOf, netFetch, AiError } from './ai.js'
 
 // A fake fetch: each call takes the next scripted reply and records what was sent.
 function fakeFetch(replies) {
@@ -83,7 +83,16 @@ describe('requests', () => {
     expect(b.response_format).toEqual({ type: 'json_object' })
     expect(b.messages[0].content).toContain('in Spanish')
     expect(b.messages[1]).toEqual({ role: 'user', content: 'café con leche' })
-    expect(buildEstimateRequest({ text: 'x', lang: 'xx', model: 'm', json: false }).response_format).toBeUndefined()
+  })
+
+  it('asks Gemini to think less, leaves temperature alone, and can drop every extra', () => {
+    const g = buildEstimateRequest({ text: 'x', lang: 'en', model: 'm', provider: 'gemini' })
+    expect(g.reasoning_effort).toBe('low')
+    expect(g.temperature).toBeUndefined()
+    expect(buildEstimateRequest({ text: 'x', lang: 'en', model: 'm', provider: 'groq' }).reasoning_effort).toBeUndefined()
+    const plain = buildEstimateRequest({ text: 'x', lang: 'xx', model: 'm', provider: 'gemini', plain: true })
+    expect(plain.response_format).toBeUndefined()
+    expect(plain.reasoning_effort).toBeUndefined()
   })
 
   it('builds the base URL per provider', () => {
@@ -103,12 +112,28 @@ describe('estimateMeal', () => {
     expect(f.calls[0].init.headers.Authorization).toBe('Bearer K')
   })
 
-  it('retries without JSON mode when the model rejects it', async () => {
+  it('retries without JSON mode or reasoning settings when the model rejects them', async () => {
     const f = fakeFetch([{ status: 400, json: {} }, chat(ESTIMATE)])
-    const r = await estimateMeal({ text: 'latte', lang: 'en', cfg, key: 'K', fetchImpl: f })
+    const stages = []
+    const r = await estimateMeal({ text: 'latte', lang: 'en', cfg, key: 'K', fetchImpl: f, onStage: s => stages.push(s) })
     expect(r.items).toHaveLength(2)
-    expect(f.calls[0].body.response_format).toBeDefined()
+    expect(f.calls[0].body).toMatchObject({ response_format: { type: 'json_object' }, reasoning_effort: 'low' })
     expect(f.calls[1].body.response_format).toBeUndefined()
+    expect(f.calls[1].body.reasoning_effort).toBeUndefined()
+    expect(stages).toEqual(['asking', 'retry', 'reading'])
+  })
+
+  it('gives up after the timeout, even if the request never settles', async () => {
+    const never = async () => new Promise(() => {})
+    await expect(estimateMeal({ text: 'x', lang: 'en', cfg, key: 'K', fetchImpl: never, timeoutMs: 20 })).rejects.toMatchObject({ kind: 'timeout' })
+  })
+
+  it('can be cancelled while waiting', async () => {
+    const never = async () => new Promise(() => {})
+    const ctl = new AbortController()
+    const p = estimateMeal({ text: 'x', lang: 'en', cfg, key: 'K', fetchImpl: never, signal: ctl.signal })
+    ctl.abort()
+    await expect(p).rejects.toMatchObject({ kind: 'cancelled' })
   })
 
   it('names the failure: rejected key, used-up quota, no network', async () => {
@@ -116,6 +141,34 @@ describe('estimateMeal', () => {
     await expect(estimateMeal({ text: 'x', lang: 'en', cfg, key: 'K', fetchImpl: fakeFetch([{ status: 429, json: {} }]) })).rejects.toMatchObject({ kind: 'limit' })
     await expect(estimateMeal({ text: 'x', lang: 'en', cfg, key: 'K', fetchImpl: fakeFetch([new TypeError('offline')]) })).rejects.toMatchObject({ kind: 'network' })
     await expect(estimateMeal({ text: 'x', lang: 'en', cfg, key: 'K', fetchImpl: fakeFetch([{ status: 200, json: {} }]) })).rejects.toMatchObject({ kind: 'format' })
+  })
+})
+
+describe('netFetch', () => {
+  afterEach(() => { delete globalThis.window; vi.unstubAllGlobals() })
+
+  it('uses the WebView’s own fetch first in the native app', async () => {
+    const web = vi.fn(async () => 'web')
+    const bridge = vi.fn(async () => 'bridge')
+    globalThis.window = { CapacitorWebFetch: web }
+    vi.stubGlobal('fetch', bridge)
+    expect(await netFetch('u', {})).toBe('web')
+    expect(bridge).not.toHaveBeenCalled()
+  })
+
+  it('falls back to the native bridge when the WebView call fails (e.g. CORS)', async () => {
+    globalThis.window = { CapacitorWebFetch: vi.fn(async () => { throw new TypeError('Failed to fetch') }) }
+    vi.stubGlobal('fetch', vi.fn(async () => 'bridge'))
+    expect(await netFetch('u', {})).toBe('bridge')
+  })
+
+  it('does not retry a call that was cancelled', async () => {
+    const ctl = new AbortController(); ctl.abort()
+    globalThis.window = { CapacitorWebFetch: vi.fn(async () => { throw new DOMException('aborted', 'AbortError') }) }
+    const bridge = vi.fn(async () => 'bridge')
+    vi.stubGlobal('fetch', bridge)
+    await expect(netFetch('u', { signal: ctl.signal })).rejects.toThrow()
+    expect(bridge).not.toHaveBeenCalled()
   })
 })
 

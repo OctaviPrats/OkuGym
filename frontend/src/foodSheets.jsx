@@ -1,6 +1,6 @@
 // Food logging sheets: adding to a meal (describe it for an AI estimate, quick add, repeat the
 // last one, my foods), reviewing an estimate, editing a serving, and connecting a free AI provider.
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useStore } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
 import { fmtNum, fmtDate, todayISO } from './lib/format.js'
@@ -37,8 +37,45 @@ export function aiErrorText(e) {
     case 'network': return t('Couldn’t reach the AI provider. Check your connection.')
     case 'model': return t('No usable model found on this account.')
     case 'format': return t('Couldn’t read the AI’s answer — try again, or describe it differently.')
+    case 'timeout': return t('The AI took too long to answer. Try again, or use quick add.')
     default: return t('The AI provider returned an error ({0}).', (e && e.status) || '?')
   }
+}
+
+const providerName = p => (PROVIDERS[p] && p !== 'custom' ? PROVIDERS[p].name : t('Custom'))
+
+// Runs an estimate with its progress: `stage` is null when idle, else what estimateMeal last
+// reported. Leaving the sheet cancels a request still on its way. A cancel is not an error.
+function useEstimate(cfg) {
+  const [stage, setStage] = useState(null)
+  const ctl = useRef(null)
+  useEffect(() => () => { if (ctl.current) ctl.current.abort() }, [])
+  const run = async text => {
+    ctl.current = new AbortController()
+    setStage('asking')
+    try { return await estimateMeal({ text, lang: getLang(), cfg, key: getKey(), onStage: setStage, signal: ctl.current.signal }) }
+    finally { ctl.current = null; setStage(null) }
+  }
+  return { stage, busy: stage != null, run, cancel: () => { if (ctl.current) ctl.current.abort() } }
+}
+
+const STAGE_TEXT = { asking: 'Asking {0}…', retry: 'Asking {0} again…', reading: 'Reading the answer…' }
+
+// While an estimate is on its way: what's happening, for how long, and a way out. The API
+// answers all at once, so there's no percentage to show — the stage and the seconds are the
+// honest progress. (The ticking clock also keeps the screen repainting while nothing else moves.)
+function AiProgress({ stage, provider, onCancel }) {
+  const [secs, setSecs] = useState(0)
+  useEffect(() => { const id = setInterval(() => setSecs(s => s + 1), 1000); return () => clearInterval(id) }, [])
+  return <div className="aiwait">
+    <div className="row between">
+      <span role="status">{t(STAGE_TEXT[stage] || STAGE_TEXT.asking, providerName(provider))}</span>
+      <span className="muted" aria-hidden="true">{secs} s</span>
+    </div>
+    <div className="kbar indet" aria-hidden="true"><span /></div>
+    {secs >= 15 && <div className="muted small">{t('Free models can be slow at busy times — still working on it.')}</div>}
+    <div className="act"><Button size="sm" variant="ghost" onClick={onCancel}>{t('Cancel')}</Button></div>
+  </div>
 }
 
 const MACRO_LABEL = { kcal: 'Calories', p: 'Protein', f: 'Fat', c: 'Carbs' }
@@ -70,22 +107,20 @@ function MacroSplit({ p, f, c }) {
 function AddFood({ slot, iso, close }) {
   const N = useN()
   const [text, setText] = useState('')
-  const [busy, setBusy] = useState(false)
   const [tab, setTab] = useState('recent')
   const [q, setQ] = useState('')
   const ready = aiReady(N)
   const meal = lastMeal(N, slot, iso)
+  const est = useEstimate(N.ai)
 
   const estimate = async () => {
     const txt = text.trim()
-    if (!txt || busy) return
-    setBusy(true)
+    if (!txt || est.busy) return
     try {
-      const res = await estimateMeal({ text: txt, lang: getLang(), cfg: N.ai, key: getKey() })
+      const res = await est.run(txt)
       if (!res.items.length) toast(t('That doesn’t read as food — try describing it differently.'))
       else estimateSheet({ res, text: txt, slot, iso, done: close })
-    } catch (e) { toast(aiErrorText(e)) }
-    setBusy(false)
+    } catch (e) { if (e.kind !== 'cancelled') toast(aiErrorText(e)) }
   }
   const ql = q.trim().toLowerCase()
   const list = tab === 'recent' ? recentFoods(N, slot, iso)
@@ -100,13 +135,13 @@ function AddFood({ slot, iso, close }) {
     {ready ? <>
       <div className="describe">
         <label htmlFor="describe">{t('Describe what you ate')}</label>
-        <textarea id="describe" rows={2} value={text} maxLength={400} onChange={e => setText(e.target.value)}
+        <textarea id="describe" rows={2} value={text} maxLength={400} readOnly={est.busy} onChange={e => setText(e.target.value)}
           placeholder={t('e.g. a large latte and an egg sandwich from Starbucks')} />
-        <div className="act">
-          <Button variant="primary" size="sm" icon="sparkles" disabled={busy || !text.trim()} onClick={estimate}>
-            {busy ? t('Estimating…') : t('Get estimate')}
-          </Button>
-        </div>
+        {est.busy ? <AiProgress stage={est.stage} provider={N.ai.provider} onCancel={est.cancel} /> : (
+          <div className="act">
+            <Button variant="primary" size="sm" icon="sparkles" disabled={!text.trim()} onClick={estimate}>{t('Get estimate')}</Button>
+          </div>
+        )}
       </div>
       <p className="sect-f" style={{ marginBottom: 16 }}>{t('AI suggests the calories and macros. You check them before anything is saved.')}</p>
     </> : (
@@ -152,7 +187,8 @@ function Estimate({ res, text, slot, iso, done, close }) {
   const [items, setItems] = useState(asItems(res.items))
   const [assumptions, setAssumptions] = useState(res.assumptions)
   const [ask, setAsk] = useState(text)
-  const [busy, setBusy] = useState(false)
+  const est = useEstimate(N.ai)
+  const busy = est.busy
   const chosen = items.filter(i => i.on)
   const sum = totals(chosen.map(i => ({ kcal: i.kcal * i.qty, p: i.p * i.qty, f: i.f * i.qty, c: i.c * i.qty })))
   const goal = goalOn(N, iso)
@@ -163,12 +199,10 @@ function Estimate({ res, text, slot, iso, done, close }) {
   // depends on it moves together (a smaller coffee is less milk is less of everything).
   const redo = async correction => {
     const txt = ask + '\n' + correction
-    setBusy(true)
     try {
-      const r = await estimateMeal({ text: txt, lang: getLang(), cfg: N.ai, key: getKey() })
+      const r = await est.run(txt)
       if (r.items.length) { setItems(asItems(r.items)); setAssumptions(r.assumptions); setAsk(txt) }
-    } catch (e) { toast(aiErrorText(e)) }
-    setBusy(false)
+    } catch (e) { if (e.kind !== 'cancelled') toast(aiErrorText(e)) }
   }
   const add = () => {
     mutate(n => logFoods(n, chosen, slot, iso))
@@ -222,8 +256,9 @@ function Estimate({ res, text, slot, iso, done, close }) {
         {left != null && <span>{left >= 0 ? t('{0} kcal left after this', fmtNum(left)) : t('{0} kcal over after this', fmtNum(-left))}</span>}
       </div>
     </div>
+    {busy && <div className="card"><AiProgress stage={est.stage} provider={N.ai.provider} onCancel={est.cancel} /></div>}
     <Button variant="primary" disabled={!chosen.length || busy} onClick={add}>
-      {busy ? t('Estimating…') : t(chosen.length === 1 ? 'Add {0} item to {1}' : 'Add {0} items to {1}', chosen.length, slotName(slot))}
+      {t(chosen.length === 1 ? 'Add {0} item to {1}' : 'Add {0} items to {1}', chosen.length, slotName(slot))}
     </Button>
     <p className="sect-f" style={{ textAlign: 'center' }}>{t('Saved to My foods, so next time it’s one tap. AI estimate: check the values — you can change them.')}</p>
   </>

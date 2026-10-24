@@ -737,4 +737,10 @@ export default {
   'gentle deficit': '温和缺口',
   'moderate deficit': '适中缺口',
   'aggressive deficit': '激进缺口',
+  // estimate progress
+  'Asking {0}…': '正在询问 {0}…',
+  'Asking {0} again…': '正在重新询问 {0}…',
+  'Reading the answer…': '正在读取回答…',
+  'Free models can be slow at busy times — still working on it.': '免费模型在高峰时段可能较慢——仍在处理中。',
+  'The AI took too long to answer. Try again, or use quick add.': 'AI 响应时间过长。请重试，或使用快速添加。',
 }

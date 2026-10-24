@@ -3,8 +3,7 @@
 //
 // Every provider here speaks the OpenAI-style chat API (Gemini through its OpenAI compatibility
 // endpoint), so one adapter covers them all: switching provider is a base URL, a key and a model
-// id. Plain fetch, no SDK. In the native app CapacitorHttp (capacitor.config.json) sends fetch
-// through the OS, so browser CORS rules don't get in the way.
+// id. Plain fetch, no SDK.
 //
 // The key is kept in localStorage only, never in S — S is synced, backed up and shared.
 
@@ -19,12 +18,26 @@ const KEY = 'gym_ai_key'
 export const getKey = () => { try { return localStorage.getItem(KEY) || '' } catch (e) { return '' } }
 export const setKey = k => { try { if (k) localStorage.setItem(KEY, k); else localStorage.removeItem(KEY) } catch (e) { /* storage blocked */ } }
 
-export const aiReady = N => !!(N && N.ai && N.ai.on && N.ai.model && getKey())
+// A custom endpoint (a local Ollama) may need no key at all.
+export const aiReady = N => !!(N && N.ai && N.ai.on && N.ai.model && (getKey() || N.ai.provider === 'custom'))
 
 // kind: 'key' (rejected), 'limit' (rate limit / free quota used up), 'network', 'model'
-// (no usable model), 'format' (an answer we can't read), 'http' (anything else)
+// (no usable model), 'format' (an answer we can't read), 'timeout', 'cancelled', 'http' (anything else)
 export class AiError extends Error {
   constructor(kind, status) { super(kind); this.kind = kind; this.status = status }
+}
+
+// How requests go out. In the native app CapacitorHttp (capacitor.config.json) replaces
+// window.fetch with one that runs through the native bridge: that gets past CORS, but on Android
+// its answer has been seen to sit undelivered until the next touch on the screen. So the
+// WebView's own fetch, which Capacitor keeps as CapacitorWebFetch, goes first, and the bridge is
+// only the fallback for a provider that refuses browser calls. In a browser this is plain fetch.
+export async function netFetch(url, init) {
+  const web = typeof window !== 'undefined' && window.CapacitorWebFetch
+  if (web) {
+    try { return await web(url, init) } catch (e) { if (init && init.signal && init.signal.aborted) throw e }
+  }
+  return fetch(url, init)
 }
 
 export const baseOf = cfg => String((cfg.provider === 'custom' ? cfg.base : PROVIDERS[cfg.provider]?.base) || '').replace(/\/+$/, '')
@@ -38,7 +51,7 @@ function headersFor(cfg, key) {
 
 async function call(fetchImpl, url, init) {
   let res
-  try { res = await fetchImpl(url, init) } catch (e) { throw new AiError('network') }
+  try { res = await fetchImpl(url, init) } catch (e) { throw new AiError(init && init.signal && init.signal.aborted ? 'cancelled' : 'network') }
   if (res.ok) return res
   const s = res.status
   throw new AiError(s === 401 || s === 403 ? 'key' : s === 429 ? 'limit' : 'http', s)
@@ -76,7 +89,7 @@ async function listModels(cfg, key, fetchImpl) {
 
 // Checks the key and finds a model that answers on this account (a free tier can list a
 // model it has no quota for). Returns the model id to save.
-export async function connect(cfg, key, fetchImpl = fetch) {
+export async function connect(cfg, key, fetchImpl = netFetch) {
   if (!baseOf(cfg)) throw new AiError('network')
   const ids = await listModels(cfg, key, fetchImpl)
   const candidates = cfg.model ? [cfg.model] : pickModels(cfg.provider, ids).slice(0, 4)
@@ -120,34 +133,67 @@ export function systemPrompt(lang) {
   ].join('\n')
 }
 
-export function buildEstimateRequest({ text, lang, model, json = true }) {
+// No temperature: Gemini 3 models are meant to run at their default, and lowering it can make them
+// slower or loop. Gemini thinks before answering by default; reading a meal needs little of that,
+// so it is asked for low effort — the biggest single cut in waiting time. `plain` drops every
+// extra, for a model that rejects them.
+export function buildEstimateRequest({ text, lang, model, provider, plain = false }) {
   const body = {
     model,
-    temperature: 0.2,
     messages: [
       { role: 'system', content: systemPrompt(lang) },
       { role: 'user', content: String(text).trim() },
     ],
   }
-  if (json) body.response_format = { type: 'json_object' }
+  if (!plain) {
+    body.response_format = { type: 'json_object' }
+    if (provider === 'gemini') body.reasoning_effort = 'low'
+  }
   return body
 }
 
-export async function estimateMeal({ text, lang, cfg, key, fetchImpl = fetch }) {
+export const ESTIMATE_TIMEOUT = 75000
+
+// `onStage` hears what is happening, for the progress shown while waiting: 'asking' (sent,
+// the model is working), 'retry' (asked again without JSON mode), 'reading' (answer in). There
+// is no percentage to report — the API answers all at once. `signal` cancels; after `timeoutMs`
+// it gives up. Both settle straight away even if the transport ignores the abort.
+export async function estimateMeal({ text, lang, cfg, key, fetchImpl = netFetch, onStage, signal, timeoutMs = ESTIMATE_TIMEOUT }) {
+  const stage = s => { if (onStage) onStage(s) }
+  const ctl = new AbortController()
+  let timedOut = false
+  const timer = setTimeout(() => { timedOut = true; ctl.abort() }, timeoutMs)
+  const cancel = () => ctl.abort()
+  if (signal) { if (signal.aborted) ctl.abort(); else signal.addEventListener('abort', cancel) }
+  const stopped = new Promise((_, reject) => ctl.signal.addEventListener('abort', () => reject(new AiError('cancelled'))))
+  stopped.catch(() => {})
+  const race = p => Promise.race([p, stopped])
+
   const url = baseOf(cfg) + '/chat/completions'
-  const send = json => call(fetchImpl, url, {
-    method: 'POST', headers: headersFor(cfg, key),
-    body: JSON.stringify(buildEstimateRequest({ text, lang, model: cfg.model, json })),
-  })
-  let res
-  try { res = await send(true) } catch (e) {
-    // not every model takes JSON mode; the prompt asks for JSON anyway
-    if (e.kind === 'http' && e.status === 400) res = await send(false)
-    else throw e
+  const send = plain => race(call(fetchImpl, url, {
+    method: 'POST', headers: headersFor(cfg, key), signal: ctl.signal,
+    body: JSON.stringify(buildEstimateRequest({ text, lang, model: cfg.model, provider: cfg.provider, plain })),
+  }))
+  try {
+    stage('asking')
+    let res
+    try { res = await send(false) } catch (e) {
+      // not every model takes JSON mode or a reasoning setting; the prompt asks for JSON anyway
+      if (e.kind !== 'http' || e.status !== 400) throw e
+      stage('retry')
+      res = await send(true)
+    }
+    stage('reading')
+    const j = await race(res.json().catch(() => null))
+    const content = j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content
+    return parseEstimate(content)
+  } catch (e) {
+    if (e.kind === 'cancelled' && timedOut) throw new AiError('timeout')
+    throw e
+  } finally {
+    clearTimeout(timer)
+    if (signal) signal.removeEventListener('abort', cancel)
   }
-  const j = await res.json().catch(() => null)
-  const content = j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content
-  return parseEstimate(content)
 }
 
 /* ------------------------------------------------------------ parsing -- */
