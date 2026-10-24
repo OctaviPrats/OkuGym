@@ -144,14 +144,20 @@ export default function Settings() {
 
     {/* ---------- appearance ---------- */}
     <Section title={t('Appearance')} footer={DEMO || MOBILE ? undefined : t('synced with your profile')}>
-      <Row icon="moon" iconTint="var(--indigo)" title={t('Theme')}>
+      {/* Three themes don't fit beside the title on a narrow phone (or in Russian on any phone),
+          so the control takes its own line under it, the way the accent swatches do.
+          Espresso comes with its own caramel accent; any other can still be picked below. */}
+      <div className="lrow" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 11, paddingBottom: 14 }}>
+        <div className="row" style={{ gap: 12 }}>
+          <span className="lrow-i" style={{ '--tint': 'var(--indigo)' }}><Icon name="moon" /></span>
+          <span className="lrow-t">{t('Theme')}</span>
+        </div>
         <Segmented
-          className="seg-inline"
-          options={[{ value: 'dark', icon: 'moon', label: t('Dark') }, { value: 'light', icon: 'sun', label: t('Light') }]}
-          value={S.theme === 'light' ? 'light' : 'dark'}
-          onChange={v => update(s => { s.theme = v })}
+          options={[{ value: 'dark', icon: 'moon', label: t('Dark') }, { value: 'light', icon: 'sun', label: t('Light') }, { value: 'espresso', icon: 'cup', label: t('Espresso') }]}
+          value={S.theme === 'light' || S.theme === 'espresso' ? S.theme : 'dark'}
+          onChange={v => update(s => { s.theme = v; if (v === 'espresso') s.accent = 'caramel' })}
         />
-      </Row>
+      </div>
       {/* Purely how the muscle map is drawn — nothing else in the app reads this. */}
       <Row icon="figureStrength" iconTint="var(--teal)" title={t('Body diagram')}>
         <Segmented

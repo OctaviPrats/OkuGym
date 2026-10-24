@@ -83,6 +83,27 @@
   --on-acc:#ffffff;
 }
 
+/* espresso — the dark theme in the colours of the hanko icon: roasted-brown surfaces a few
+   points apart, washi-cream text. Everything not set here (status colours, the dark-only
+   rules further down) is the dark theme's, so it reads as dark mode, only warm. */
+:root[data-theme="espresso"] {
+  --bg:        #160f0a;
+  --bg-el:     #1f1610;
+  --surface:   #2a1e16;
+  --surface-2: #3a2b20;
+  --surface-3: #4a382b;
+
+  --label:     #f3e9dc;
+  --label-2:   rgba(243,233,220,.62);
+  --label-3:   rgba(243,233,220,.34);
+  --label-4:   rgba(243,233,220,.18);
+
+  --sep:       rgba(122,94,72,.55);
+  --sep-op:    rgba(122,94,72,.32);
+
+  --brown:#d4a373;
+}
+
 /* accents — Apple's system colours, so a recolour never looks off-system */
 :root[data-accent="lime"]  { --acc:var(--green);  --acc-2:#248a3d; --on-acc:#000 }
 :root[data-accent="sky"]   { --acc:var(--blue);   --acc-2:#0060df; --on-acc:#fff }
@@ -92,6 +113,10 @@
 :root[data-accent="red"]   { --acc:var(--red);    --acc-2:#d70015; --on-acc:#fff }
 :root[data-accent="teal"]  { --acc:var(--teal);   --acc-2:#0071a4; --on-acc:#000 }
 :root[data-accent="gold"]  { --acc:var(--yellow); --acc-2:#b25000; --on-acc:#000 }
+/* the one off-system accent: the icon's own browns. Caramel on the dark themes, deepened to
+   the seal's cinnamon on light, where caramel text on white would be 2.2:1 (cinnamon: 5.1:1). */
+:root[data-accent="caramel"]{ --acc:#d4a373; --acc-2:#b07f4e; --on-acc:#2b1b12 }
+:root[data-theme="light"][data-accent="caramel"]{ --acc:#a8582e; --acc-2:#8a4522; --on-acc:#fff }
 /* Label colour on a filled accent button is picked per accent by measured contrast,
    not by taste. Button text is 17px/600, so the AA bar is 3:1 (large text). White on
    the light-theme green is 2.22:1 and on teal 2.57:1 — both fail, and green is the

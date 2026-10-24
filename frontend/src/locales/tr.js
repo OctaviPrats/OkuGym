@@ -247,6 +247,7 @@ export default {
   'Theme': 'Tema',
   'Dark': 'Koyu',
   'Light': 'Açık',
+  'Espresso': 'Espresso',
   'Accent color': 'Vurgu rengi',
   'General': 'Genel',
   'During a workout': 'Antrenman sırasında',

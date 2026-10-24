@@ -247,6 +247,7 @@ export default {
   'Theme': 'Motyw',
   'Dark': 'Ciemny',
   'Light': 'Jasny',
+  'Espresso': 'Espresso',
   'Accent color': 'Kolor akcentu',
   'General': 'Ogólne',
   'During a workout': 'Podczas treningu',
