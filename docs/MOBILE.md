@@ -43,12 +43,14 @@ into both native projects — re-run it after every web-code change before build
 
 ## App icons & splash screens
 
-`frontend/resources/icon.svg` is the 1024×1024 source (the app's dumbbell glyph on the
-app background). Generate all platform assets from it on a machine with the tooling:
+`frontend/resources/icon.svg` is the 1024×1024 source: the OkuGym hanko, a cinnamon name
+seal carved with the katakana オ (its horizontal stroke is a barbell), on washi-cream paper.
+The committed splash screens show the seal alone, without the paper, on the app background.
+Generate all platform assets from it on a machine with the tooling:
 
 ```sh
 cd frontend
-npx @capacitor/assets generate --iconBackgroundColor '#0c0e12' --splashBackgroundColor '#0c0e12'
+npx @capacitor/assets generate --iconBackgroundColor '#F3E9DC' --splashBackgroundColor '#0c0e12'
 ```
 
 (If the generator won't take the SVG directly, export it to `resources/icon.png` at

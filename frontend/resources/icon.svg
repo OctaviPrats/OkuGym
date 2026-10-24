@@ -1,13 +1,22 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 512 512">
-  <!-- App-icon source == the PWA icon (public/icon-512.png), geometry traced 1:1 so the
-       native app, the home-screen PWA and the website favicon all show the same icon.
-       Generate platform icons + splash via `npx @capacitor/assets generate` — docs/MOBILE.md. -->
-  <rect width="512" height="512" fill="#0c0e12"/>
-  <g fill="#a3e635">
-    <rect x="80" y="242" width="352" height="28"/>
-    <rect x="80" y="199" width="36" height="114"/>
-    <rect x="131" y="169" width="47" height="174"/>
-    <rect x="334" y="169" width="47" height="174"/>
-    <rect x="396" y="199" width="36" height="114"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- App-icon source: the OkuGym hanko, a name seal carved with the katakana オ ("O" of Oku /
+       Okutabi) whose horizontal stroke is a barbell. The PWA icons (public/icon-*.png) and the
+       native icons + splash are rendered from this file — docs/MOBILE.md.
+       The seal stays inside the maskable safe zone (a circle of 80% diameter), so round masks
+       never clip its corners. -->
+  <rect width="1024" height="1024" fill="#F3E9DC"/>
+  <rect x="224" y="224" width="576" height="576" rx="55" fill="#A8582E"/>
+  <g transform="translate(315 317) scale(3.94)" fill="#F3E9DC">
+    <!-- barbell plates -->
+    <rect x="10" y="14.5" width="9.5" height="33" rx="2.5"/>
+    <rect x="1.5" y="20.5" width="7.5" height="21" rx="2"/>
+    <rect x="80.5" y="14.5" width="9.5" height="33" rx="2.5"/>
+    <rect x="91" y="20.5" width="7.5" height="21" rx="2"/>
+    <!-- オ: bar (the only horizontal), vertical with its hook, sweep to the lower left -->
+    <g fill="none" stroke="#F3E9DC" stroke-width="11" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M15 31 H85"/>
+      <path d="M60 4 V85 Q60 95 51 93 L44 89"/>
+      <path d="M59 37 Q53 68 9 88"/>
+    </g>
   </g>
 </svg>
