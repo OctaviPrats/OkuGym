@@ -5,7 +5,8 @@
 | **Estado** | Borrador para revisión |
 | **Fecha** | 24 oct 2026 |
 | **Alcance v1** | Déficit calórico (dieta hipocalórica). Mantenimiento y volumen quedan preparados en el modelo de datos, sin UI |
-| **Diseños** | [Canvas "OkuGym Nutrición"](https://claude.ai/artifact/PhCW89AfNnr3ay4dATrRHS) (privado) — pantallas citadas como **[P1]…[P11]** |
+| **Contexto de uso** | La app se usa en local (APK o navegador en modo invitado), **sin servidor**. Todo lo de esta feature tiene que funcionar así, y **gratis** |
+| **Diseños** | [Canvas "OkuGym Nutrición"](https://claude.ai/artifact/PhCW89AfNnr3ay4dATrRHS) (privado) — pantallas citadas como **[P1]…[P12]** |
 
 ---
 
@@ -42,7 +43,7 @@ otra mitad, lo que comes. Esta feature añade:
 | O2 | Traducir el objetivo a gramos de proteína, grasa y carbohidratos | Los tres valores visibles en el objetivo y en la pantalla del día |
 | O3 | Registrar una comida sin saber nutrición | Comida nueva en < 30 s; comida repetida en < 5 s |
 | O4 | Saber en todo momento cuánto queda del día | Visible en Home y en la pantalla de Nutrición, sin cálculos mentales |
-| O5 | Respetar los principios de OkuGym | Datos en tu perfil y en el backup; sin telemetría; la IA es opcional y desactivada por defecto |
+| O5 | Respetar los principios de OkuGym | Datos en tu perfil y en el backup; sin telemetría; la IA es opcional, gratuita (con tu propia clave) y desactivada por defecto |
 
 **No-objetivos (v1)**
 
@@ -73,7 +74,7 @@ otra mitad, lo que comes. Esta feature añade:
 **Recomendación:** una pestaña nueva **Comida** que sustituye a *Ejercicios* en la barra inferior
 (Inicio · Plan · Empezar · Comida · Stats). La biblioteca de ejercicios pasa a un botón en la cabecera de *Plan*,
 que es desde donde se usa casi siempre (al editar rutinas). Registrar comida es una acción diaria, varias veces
-al día, y necesita un acceso de primer nivel; la biblioteca es consulta ocasional. → **Decisión D1**.
+al día, y necesita un acceso de primer nivel; la biblioteca es consulta ocasional. → **D1: aprobado.**
 
 Además, **Home** gana una tarjeta "Nutrición" bajo la semana [P1] con el resumen del día y un botón "+".
 
@@ -109,7 +110,8 @@ directamente y saltarse la calculadora.
 Hoja inferior (patrón `sheet` de la app) con, en este orden de prioridad:
 
 1. **Campo "Describe lo que has comido"** con micrófono (dictado del teclado del sistema) y botón de **foto**.
-   → Estimación con IA (§7.1). Solo aparece si el servidor tiene la IA activada.
+   → Estimación con IA (§7.1). Solo aparece si has conectado un proveedor de IA [P12]; si no, en su lugar se
+   muestra "Conectar IA gratis".
 2. Accesos: **Escanear código** · **Buscar** · **Añadir rápido**.
 3. **"Repetir desayuno de ayer"** (o la comida equivalente del último día con registro en esa franja).
 4. Pestañas **Recientes · Favoritos · Mis alimentos**, con un toque para añadir la ración habitual.
@@ -147,8 +149,9 @@ Tarjeta en *Comida* y en *Stats*, cada lunes:
 
 ### 5.8 Ajustes → Nutrición [P11]
 
-Objetivo actual (con "Recalcular"), comidas del día (nombres y orden), **Estimaciones con IA** (activar/desactivar,
-con texto de qué se envía), mostrar/ocultar macros, unidad de energía (kcal; kJ en fase posterior).
+Objetivo actual (con "Recalcular"), comidas del día (nombres y orden), **Estimaciones con IA** (proveedor, clave,
+activar/desactivar y qué se envía; conexión en [P12]), mostrar/ocultar macros, unidad de energía (kcal; kJ en
+fase posterior).
 
 ## 6. Cálculos
 
@@ -223,31 +226,50 @@ Las fórmulas fallan ±10–15 % de una persona a otra. Con datos reales se corr
 Orden de preferencia al mostrar resultados: **Mis alimentos** (lo que ya has usado) → **base genérica incluida** →
 **Open Food Facts** → **estimación con IA**.
 
-### 7.1 Estimación con IA (texto y foto)
+### 7.1 Estimación con IA (texto y foto): gratis y sin servidor
 
 - **Qué hace:** a partir de una frase y/o una foto, devuelve una lista de alimentos con ración, gramos, kcal,
   P/G/C, **confianza** (alta/media/baja), **origen** ("info publicada por la cadena" / "estimación genérica") y
   **supuestos** editables (tamaño, tipo de leche…).
-- **Cómo:** endpoint del servidor `POST /api/food/estimate` que llama a la API de Claude con:
-  - salida estructurada (`output_config.format` con un JSON Schema), para no parsear texto libre;
-  - **búsqueda web** opcional (`web_search`) para productos de cadenas y restaurantes, donde suele haber
-    información nutricional publicada — es lo que convierte "egg sandwich" en un número defendible;
-  - visión para fotos (la imagen se redimensiona en el cliente a ~1024 px y no se guarda en el servidor);
-  - esfuerzo bajo (`effort: "low"`): es una tarea de extracción, no de razonamiento largo.
-  - Verificar en la implementación que la salida estructurada y la búsqueda web funcionan juntas en el modelo elegido.
-- **Modelo:** configurable con `AI_MODEL`, por defecto `claude-opus-5-5`. → **Decisión D2** (precisión vs coste).
+- **Cómo, sin servidor:** la app llama directamente desde el móvil (o el navegador) a un proveedor de IA con
+  **tu propia clave gratuita**. Para el uso previsto (≈ 1 registro al día) no hace falta servidor ni pagar nada.
+  - Un único adaptador, `src/lib/ai.js`, que habla el formato de chat "compatible con OpenAI". Lo ofrecen Google
+    Gemini, Groq, OpenRouter y Ollama, así que cambiar de proveedor es cambiar URL base, clave y modelo.
+    Sin dependencias nuevas: `fetch`.
+  - Respuesta en JSON con esquema (`response_format`), validada en el cliente antes de mostrarla.
+  - Fotos: se reducen en el dispositivo a ~1024 px antes de enviarlas.
+  - En el APK, las llamadas salen por `CapacitorHttp` (ya incluido en `@capacitor/core`) para evitar problemas
+    de CORS.
+  - Búsqueda en la web (para cadenas como Starbucks) solo si el proveedor la incluye gratis (Gemini: "Grounding
+    with Google Search" en algunos modelos Flash). Si no, el modelo estima con lo que sabe y lo marca con
+    confianza media/baja.
+- **Proveedores gratuitos** (presets en la pantalla de conexión [P12]):
+
+| Proveedor | Modelos | Coste | Plan gratis (aprox., cambia a menudo) | Fotos | A favor / en contra |
+|---|---|---|---|---|---|
+| **Google Gemini** (recomendado) | Flash / Flash-Lite | 0 €, sin tarjeta | de ~20 a cientos de peticiones/día según el modelo | Sí | Conoce bien productos de cadenas y puede buscar en Google. En el plan gratis, Google puede usar lo enviado para mejorar sus productos |
+| **Groq** | Abiertos (Qwen, Llama…) | 0 €, sin tarjeta | ~1000 peticiones/día en sus modelos principales | Según el modelo | **Open source** y muy rápido; sabe menos de productos concretos y no busca en la web |
+| **OpenRouter** | Modelos `:free` | 0 € | 50 peticiones/día | Según el modelo | Muchos modelos abiertos; el catálogo gratis cambia a menudo |
+| **Ollama** (en tu ordenador) | Qwen-VL, Gemma… | 0 € | Sin límite | Sí | 100 % privado. Solo si usas OkuGym en el ordenador; necesita ~8 GB de RAM y es más lento y menos preciso |
+
+  Con 1 registro al día sobra cualquier plan gratuito. Como los límites cambian, un error 429 ("límite alcanzado")
+  se explica con claridad y se ofrece "añadir rápido" como alternativa.
+- **Descartado:** un modelo dentro del propio móvil. Pide descargar varios GB, es lento y su precisión
+  nutricional es baja.
 - **Reglas de producto:** nunca se guarda nada sin confirmar; la estimación se puede editar; lo confirmado se guarda
   en *Mis alimentos* para no volver a llamar a la IA por lo mismo.
 - **Solo se envía** el texto y/o la foto de la comida y el idioma. Nunca peso, % de grasa, historial ni nombre.
+- **La clave de API** se guarda solo en el dispositivo y fuera del estado `S`: no se sincroniza, no entra en el
+  backup ni en "Compartir plan", y se puede revocar en la web del proveedor.
 
 ### 7.2 Código de barras y búsqueda: Open Food Facts
 
-- Base abierta (ODbL), con buena cobertura en España.
-- **A través del servidor** (`GET /api/food/barcode/:ean`, `GET /api/food/search?q=`): permite enviar el
-  `User-Agent` propio que OFF pide (un navegador no puede fijarlo), cachear en `DATA_DIR` para todos los usuarios
-  de la instancia, y no exponer la IP de cada usuario.
-- Límites de OFF: 15 consultas/min de producto y 10/min de búsqueda por IP. **La búsqueda se lanza al pulsar
-  "Buscar", nunca mientras se escribe.**
+- Base abierta (ODbL), con buena cobertura en España. Gratis y sin clave.
+- **Directamente desde el dispositivo.** En el APK, vía `CapacitorHttp` con un `User-Agent` propio
+  (`OkuGym/<versión>`), como pide OFF. Los productos ya consultados quedan en *Mis alimentos*, así que el mismo
+  código no se vuelve a pedir.
+- Límites de OFF: 15 consultas/min de producto y 10/min de búsqueda, por usuario: de sobra para uso personal.
+  **La búsqueda se lanza al pulsar "Buscar", nunca mientras se escribe.**
 - Escáner: `BarcodeDetector` donde exista (Chrome/Android); en iOS Safari no existe → en la app Capacitor haría
   falta un plugin nativo (dependencia nueva) y en la PWA de iOS, teclear el código. → **Decisión D4**.
 
@@ -284,6 +306,7 @@ S.nutrition = {
       kcal: 1890, p: 160, f: 64, c: 168 }
   ],
   slots: ['breakfast', 'lunch', 'snack', 'dinner'],   // nombres editables vía `slotNames`
+  ai: { on: true, provider: 'gemini', model: '<id del modelo>', search: true },   // la clave NO va aquí (§7.1)
   foods: [                                   // "Mis alimentos"
     { id, name, brand, src: 'ai' | 'off' | 'base' | 'user', barcode,
       per: { g: 100 }, kcal, p, f, c, fiber,
@@ -301,62 +324,55 @@ S.nutrition = {
 
 - **Cada entrada guarda una copia de sus valores** (kcal y macros) además del `foodId`: editar un alimento después
   no reescribe días pasados. Es el mismo principio que con las series de un entreno, que nunca se reescriben.
-- **Tamaño:** ~180 B por entrada × 8 al día × 365 ≈ 0,5 MB/año. Cabe de sobra en el límite de 5 MB de
-  `PUT /api/data`, pero el estado entero se reenvía en cada cambio. Para v1 es aceptable; si crece, separar
-  `nutrition.log` en su propio endpoint por meses (riesgo R4).
+- **Tamaño:** ~180 B por entrada × 8 al día × 365 ≈ 0,5 MB/año. Sin servidor, el límite que importa es el de
+  `localStorage` (~5 MB por origen en la mayoría de navegadores y WebViews), que comparte con el resto del estado;
+  el APK además guarda el espejo en fichero. Da para años, pero hay que vigilarlo: si el log supera ~1 MB, moverlo
+  a IndexedDB o a su propio fichero, por meses (riesgo R4). Con servidor aplica además el límite de 5 MB de
+  `PUT /api/data`.
 - **Importar backup** sigue sustituyendo el estado; "Compartir plan" **no** incluye nutrición.
 - **Migración:** `DEF.nutrition = null`; la UI de Comida muestra la calculadora mientras sea `null`.
 
-## 9. Cambios en el backend (`api/server.js`)
+## 9. Cambios técnicos
 
-| Endpoint | Qué hace | Notas |
-|---|---|---|
-| `GET /api/config` | Añade `{ ai: bool, off: bool }` | La UI oculta lo que el servidor no ofrece |
-| `POST /api/food/estimate` | `{ text?, image?, slot, lang }` → `{ items[], assumptions[] }` | Requiere sesión. Límite diario por usuario |
-| `GET /api/food/barcode/:ean` | Proxy + caché de Open Food Facts | Caché en `DATA_DIR/food-cache.json`, 30 días |
-| `GET /api/food/search?q=` | Proxy + caché de búsqueda OFF | Solo al pulsar "Buscar" |
+**Sin servidor (caso principal).** Todo vive en el cliente y funciona igual en el APK, en el navegador en modo
+invitado y en el modo demo:
 
-Variables de entorno nuevas (todas opcionales, en `.env.example`):
+| Módulo | Qué hace |
+|---|---|
+| `src/lib/nutrition.js` (+ tests) | BMR, TDEE, déficit, límites, macros, totales del día, gasto adaptativo |
+| `src/lib/ai.js` (+ tests del parseo) | Adaptador "compatible con OpenAI": presets de proveedor, petición, validación del JSON, errores (429, clave inválida) |
+| `src/lib/off.js` | Open Food Facts: producto por código y búsqueda |
+| `capacitor.config.json` | Activar `CapacitorHttp` para que las peticiones del APK no choquen con CORS |
 
-```bash
-ANTHROPIC_API_KEY=        # vacía = estimación con IA desactivada (por defecto)
-AI_MODEL=claude-opus-5-5  # o claude-sonnet-5-5 / claude-haiku-5-5 para abaratar
-AI_WEB_SEARCH=true        # búsqueda web para productos de cadenas
-AI_DAILY_LIMIT=40         # estimaciones por usuario y día; protege la factura de quien aloja la instancia
-OFF_ENABLED=true          # Open Food Facts vía servidor
-```
+- La clave de API va en `localStorage` (`gym_ai_key`) y, en el APK, en el almacenamiento privado de la app.
+  Nunca en `S`.
+- Nada nuevo en `api/` y **ninguna dependencia nueva**.
 
-- La app no tiene limitación de peticiones por diseño, pero una clave de API cuesta dinero: el límite diario por
-  usuario es imprescindible.
-- Dependencia: el SDK oficial `@anthropic-ai/sdk` en `api/` (sería la tercera dependencia). Alternativa: `fetch`
-  a mano. Recomendado el SDK (reintentos, tipos de error, salida estructurada). → **Decisión D6**.
-- **APK sin servidor:** v1 sin IA; OFF directamente desde el móvil (verificar CORS) o desactivado.
-  **Modo demo (GitHub Pages):** sin IA ni OFF; registro manual y base genérica.
+**Con servidor (opcional, fase posterior).** Para quien aloje OkuGym para varias personas, el mismo adaptador
+podría correr en `api/server.js` (`AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL`, `AI_DAILY_LIMIT`), con un proxy y una
+caché compartida de Open Food Facts, para que cada usuario no tenga que crear su propia clave. No hace falta para
+tu caso.
 
-## 10. Coste orientativo de la IA
+## 10. Coste
 
-Supuestos: ~2000 tokens de entrada (instrucciones + esquema + frase) y ~800 de salida por estimación; una foto
-añade ~1500 de entrada; la búsqueda web añade ~10–20 mil de entrada más la tarifa por búsqueda.
-Precios de lista de la API (oct 2026), por millón de tokens entrada/salida.
+**0 €** con cualquiera de los proveedores gratuitos de §7.1: con ~1 estimación al día no se roza ningún límite.
+Lo que comes a menudo, además, sale de *Mis alimentos* y Recientes, sin llamar a la IA.
 
-| Modelo | Precio (entrada / salida) | Sin búsqueda web | Con búsqueda web | 4 al día durante un mes |
-|---|---|---|---|---|
-| `claude-opus-5-5` | $4 / $20 | ≈ $0,02–0,03 | ≈ $0,08–0,10 | ≈ $3–12 |
-| `claude-sonnet-5-5` | $2 / $10 | ≈ $0,01–0,015 | ≈ $0,04–0,05 | ≈ $1,5–6 |
-| `claude-haiku-5-5` | $0,10 / $0,50 | < $0,001 | — (verificar soporte) | < $0,15 |
-
-Con "Mis alimentos" y Recientes, las llamadas bajan rápido: lo que comes a menudo no vuelve a pasar por la IA.
+Si algún día los planes gratuitos desaparecen, el adaptador admite cualquier API compatible. Como referencia, un
+modelo pequeño de pago (p. ej. Claude Haiku 5.5, a $0,10 / $0,50 por millón de tokens) saldría a unos
+**0,02 $ al mes** a 1 estimación diaria.
 
 ## 11. Riesgos y mitigaciones
 
 | # | Riesgo | Mitigación |
 |---|---|---|
 | R1 | Estimaciones de la IA erróneas o inventadas | Confianza y origen visibles; supuestos editables; preferencia por info publicada (búsqueda web) y por etiquetas (OFF); nunca guardar sin confirmar |
-| R2 | Coste de la API para quien aloja la instancia | Desactivada por defecto; límite diario por usuario; caché vía *Mis alimentos*; modelo configurable |
+| R2 | Los planes gratuitos cambian o se recortan (ya ha pasado) | Proveedor intercambiable en Ajustes; 1 petición/día queda muy por debajo de cualquier límite; si falla, "añadir rápido" y Open Food Facts siguen funcionando |
 | R3 | Relación poco sana con la comida | Tono neutro; sin rojo ni "fallaste" al pasarse; mínimo de kcal; sin rachas de días "perfectos"; opción de ocultar números (fase 2) |
 | R4 | El estado sincronizado crece | Entradas compactas; plan de separar el log por meses si supera ~1 MB |
 | R5 | Límites de Open Food Facts | Proxy con caché compartida; búsqueda solo al enviar; `User-Agent` identificado |
-| R6 | Privacidad (fotos y descripciones salen a un tercero) | Opt-in explícito con texto claro; solo se envía la comida; las fotos no se guardan |
+| R6 | Privacidad: fotos y descripciones salen a un tercero, y en los planes gratis el proveedor puede usarlas para mejorar sus productos | Opt-in explícito, con ese aviso al conectar; solo se envía la comida; alternativa 100 % privada con Ollama en el ordenador |
+| R9 | La clave de API vive en el dispositivo | Fuera de `S`: ni sincronización, ni backup, ni "Compartir plan"; se puede revocar en la web del proveedor |
 | R7 | La fórmula no encaja con la persona | Explicar que es un punto de partida; revisión semanal adaptativa (fase 3) |
 | R8 | i18n: 12 idiomas | ~80 textos nuevos vía `t()`; números con `fmtNum`; la base genérica empieza en EN/ES (D5) |
 
@@ -374,19 +390,19 @@ la revisión semanal:
 
 | Fase | Contenido | Criterio de "hecho" |
 |---|---|---|
-| **1 — MVP** | Calculadora (3 pasos + manual) · pantalla del día · tarjeta en Home · añadir con **IA (texto)**, **añadir rápido**, **Recientes/Favoritos**, **repetir comida**, **Mis alimentos** · Ajustes → Nutrición · `nutrition.js` con tests · backup | Registrar el desayuno del ejemplo de §5.5 en < 30 s la primera vez y en < 5 s la segunda |
+| **1 — MVP** | Calculadora (3 pasos + manual) · pantalla del día · tarjeta en Home · pestaña Comida · **conectar IA gratis** con tu clave · añadir con **IA (texto)**, **añadir rápido**, **Recientes/Favoritos**, **repetir comida**, **Mis alimentos** · Ajustes → Nutrición · `nutrition.js` y `ai.js` con tests · backup | Registrar el desayuno del ejemplo de §5.5 en < 30 s la primera vez y en < 5 s la segunda |
 | **2** | Foto con IA · código de barras y búsqueda OFF · base genérica offline · comidas guardadas · alimento propio desde etiqueta · ocultar números | Un producto envasado se registra escaneando, sin escribir |
 | **3** | Revisión semanal + gasto adaptativo · gráfica kcal vs peso en Stats · recordatorio opcional para registrar | Tras 3 semanas de registro, la app propone un objetivo corregido con datos reales |
 
 ## 14. Decisiones pendientes
 
-| # | Pregunta | Recomendación |
+| # | Pregunta | Estado |
 |---|---|---|
-| D1 | ¿Pestaña "Comida" sustituyendo a "Ejercicios" (biblioteca → cabecera de Plan) o solo tarjeta en Home? | Pestaña |
-| D2 | Modelo por defecto: ¿Opus 5.5 (más preciso) o Haiku 5.5 (casi gratis)? | Opus 5.5 por defecto, configurable; medir con 20–30 comidas reales antes de bajar |
-| D3 | ¿Búsqueda web activada por defecto? | Sí: es lo que hace fiables las cadenas (Starbucks, McDonald's…) |
-| D4 | Escáner en iOS: ¿plugin nativo (dependencia nueva) o teclear el código? | Teclear en v1; plugin si se usa mucho |
-| D5 | Base genérica: ¿fuente e idiomas iniciales? | USDA (dominio público), EN + ES primero |
-| D6 | ¿SDK oficial en `api/` (3.ª dependencia) o `fetch` a mano? | SDK |
-| D7 | ¿Pedir edad y altura aunque haya % de grasa? | Opcionales; solo obligatorias sin % de grasa |
+| D1 | ¿Pestaña "Comida" sustituyendo a "Ejercicios" (biblioteca → cabecera de Plan) o solo tarjeta en Home? | ✅ **Aprobado:** pestaña Comida |
+| D2 | ¿Qué IA, y a qué coste? | ✅ **Resuelto:** gratis, con tu propia clave y llamadas desde el dispositivo. Por defecto Google Gemini (Flash / Flash-Lite); alternativa open source: Groq (Qwen, Llama) |
+| D3 | ¿Búsqueda web activada por defecto? | Sí, cuando el proveedor y el plan gratis la incluyan (Gemini); si no, estimación con confianza visible |
+| D4 | Escáner en iOS: ¿plugin nativo (dependencia nueva) o teclear el código? | Pendiente. Recomendación: teclear en v1; plugin si se usa mucho |
+| D5 | Base genérica: ¿fuente e idiomas iniciales? | Pendiente. Recomendación: USDA (dominio público), EN + ES primero |
+| D6 | ¿SDK de un proveedor concreto o `fetch`? | ✅ **Resuelto:** `fetch` con formato compatible con OpenAI; ninguna dependencia nueva |
+| D7 | ¿Pedir edad y altura aunque haya % de grasa? | Pendiente. Recomendación: opcionales; solo obligatorias sin % de grasa |
 | D8 | ¿Objetivos distintos en días de entreno? | Fase posterior |
