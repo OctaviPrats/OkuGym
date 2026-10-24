@@ -742,5 +742,14 @@ export default {
   'Asking {0} again…': 'Yeniden soruluyor: {0}…',
   'Reading the answer…': 'Yanıt okunuyor…',
   'Free models can be slow at busy times — still working on it.': 'Ücretsiz modeller yoğun saatlerde yavaş olabilir — hâlâ çalışıyor.',
-  'The AI took too long to answer. Try again, or use quick add.': 'Yapay zeka yanıt vermekte çok gecikti. Tekrar dene ya da hızlı eklemeyi kullan.',
+  // streamed estimate progress, model choice
+  '{0} is thinking…': '{0} düşünüyor…',
+  'Writing the estimate…': 'Tahmin yazılıyor…',
+  'Writing the estimate · 1 food…': 'Tahmin yazılıyor · 1 yiyecek…',
+  'Writing the estimate · {0} foods…': 'Tahmin yazılıyor · {0} yiyecek…',
+  'No answer from {0} after {1} s. Check your connection and try again.': '{1} sn sonra {0} yanıt vermedi. Bağlantını kontrol edip tekrar dene.',
+  '{0} was still working after {1} s. Try again, or pick a faster model in Settings → Food.': '{0} {1} sn sonra hâlâ çalışıyordu. Tekrar dene ya da Ayarlar → Yemek bölümünden daha hızlı bir model seç.',
+  'Model': 'Model',
+  'Lite models answer faster; the others know more products.': 'Lite modeller daha hızlı yanıt verir; diğerleri daha çok ürün bilir.',
+  'Faster': 'Daha hızlı',
 }

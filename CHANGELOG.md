@@ -34,6 +34,10 @@ a food log that doesn't ask you to know how many calories a latte has.
   local Ollama — and the app calls it straight from your device. One small adapter, no new
   dependencies. The key stays on the device: it's not in your synced data, backups or shared
   plans. Only the meal description is ever sent.
+- **You see what the AI is doing.** The answer streams in, so while you wait the sheet says
+  whether the request is still on its way, the model is thinking, or the foods are being written
+  (and how many so far), with the seconds and a Cancel button. Free models can be slow at busy
+  times; if yours is, pick a faster one (a *Lite* model) in the connection settings.
 - **One tap the second time.** Everything you log lands in *My foods*; the add sheet lists what
   you usually eat at that meal first, keeps favourites, and repeats your last breakfast (or lunch,
   or dinner) in one go. **Quick add** takes just the calories when that's all you know.

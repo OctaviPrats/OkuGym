@@ -742,5 +742,14 @@ export default {
   'Asking {0} again…': 'Спрашиваем {0} ещё раз…',
   'Reading the answer…': 'Читаем ответ…',
   'Free models can be slow at busy times — still working on it.': 'Бесплатные модели в часы пик бывают медленными — работа ещё идёт.',
-  'The AI took too long to answer. Try again, or use quick add.': 'ИИ слишком долго отвечал. Попробуйте ещё раз или воспользуйтесь быстрым добавлением.',
+  // streamed estimate progress, model choice
+  '{0} is thinking…': '{0} думает…',
+  'Writing the estimate…': 'Составляем оценку…',
+  'Writing the estimate · 1 food…': 'Составляем оценку · 1 продукт…',
+  'Writing the estimate · {0} foods…': 'Составляем оценку · продуктов: {0}…',
+  'No answer from {0} after {1} s. Check your connection and try again.': 'Нет ответа от {0} за {1} с. Проверьте подключение и попробуйте ещё раз.',
+  '{0} was still working after {1} s. Try again, or pick a faster model in Settings → Food.': '{0} всё ещё работал спустя {1} с. Попробуйте ещё раз или выберите более быструю модель в разделе Настройки → Питание.',
+  'Model': 'Модель',
+  'Lite models answer faster; the others know more products.': 'Модели Lite отвечают быстрее, остальные знают больше продуктов.',
+  'Faster': 'Быстрее',
 }

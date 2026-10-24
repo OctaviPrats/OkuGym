@@ -742,5 +742,14 @@ export default {
   'Asking {0} again…': '{0} से फिर से पूछ रहे हैं…',
   'Reading the answer…': 'जवाब पढ़ रहे हैं…',
   'Free models can be slow at busy times — still working on it.': 'व्यस्त समय में मुफ़्त मॉडल धीमे हो सकते हैं — अभी भी काम चल रहा है।',
-  'The AI took too long to answer. Try again, or use quick add.': 'AI ने जवाब देने में बहुत देर लगा दी। फिर से कोशिश करें, या झटपट एंट्री का इस्तेमाल करें।',
+  // streamed estimate progress, model choice
+  '{0} is thinking…': '{0} सोच रहा है…',
+  'Writing the estimate…': 'अनुमान लिखा जा रहा है…',
+  'Writing the estimate · 1 food…': 'अनुमान लिखा जा रहा है · 1 खाद्य…',
+  'Writing the estimate · {0} foods…': 'अनुमान लिखा जा रहा है · {0} खाद्य…',
+  'No answer from {0} after {1} s. Check your connection and try again.': '{1} सेकंड बाद भी {0} से कोई जवाब नहीं मिला। कनेक्शन जाँचें और फिर से कोशिश करें।',
+  '{0} was still working after {1} s. Try again, or pick a faster model in Settings → Food.': '{1} सेकंड बाद भी {0} काम कर रहा था। फिर से कोशिश करें, या सेटिंग्स → खाना में तेज़ मॉडल चुनें।',
+  'Model': 'मॉडल',
+  'Lite models answer faster; the others know more products.': 'Lite मॉडल जल्दी जवाब देते हैं; बाकी ज़्यादा उत्पाद जानते हैं।',
+  'Faster': 'तेज़',
 }

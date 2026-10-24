@@ -111,6 +111,11 @@ export async function connect(cfg, key, fetchImpl = netFetch) {
   throw last || new AiError('model')
 }
 
+// The models this key can use, best first, for choosing another one (a faster one, say).
+export async function availableModels(cfg, key, fetchImpl = netFetch) {
+  return pickModels(cfg.provider, await listModels(cfg, key, fetchImpl))
+}
+
 /* ----------------------------------------------------------- estimate -- */
 
 const LANG_NAMES = {
@@ -136,10 +141,12 @@ export function systemPrompt(lang) {
 // No temperature: Gemini 3 models are meant to run at their default, and lowering it can make them
 // slower or loop. Gemini thinks before answering by default; reading a meal needs little of that,
 // so it is asked for low effort — the biggest single cut in waiting time. `plain` drops every
-// extra, for a model that rejects them.
+// extra, for a model that rejects them. The answer is streamed, so the app can tell a model that
+// is thinking or writing from a connection that went quiet.
 export function buildEstimateRequest({ text, lang, model, provider, plain = false }) {
   const body = {
     model,
+    stream: true,
     messages: [
       { role: 'system', content: systemPrompt(lang) },
       { role: 'user', content: String(text).trim() },
@@ -152,14 +159,49 @@ export function buildEstimateRequest({ text, lang, model, provider, plain = fals
   return body
 }
 
-export const ESTIMATE_TIMEOUT = 75000
+export const ESTIMATE_TIMEOUT = 180000
 
-// `onStage` hears what is happening, for the progress shown while waiting: 'asking' (sent,
-// the model is working), 'retry' (asked again without JSON mode), 'reading' (answer in). There
-// is no percentage to report — the API answers all at once. `signal` cancels; after `timeoutMs`
-// it gives up. Both settle straight away even if the transport ignores the abort.
+// Where the first JSON object in `s` closes (the index just past its '}'), or -1 while it is
+// still open. Lets reading stop as soon as the answer is complete: in JSON mode a model can
+// carry on with whitespace for minutes after it.
+export function jsonEnd(s) {
+  let depth = 0, inStr = false, esc = false
+  for (let i = s.indexOf('{'); i >= 0 && i < s.length; i++) {
+    const ch = s[i]
+    if (inStr) {
+      if (esc) esc = false
+      else if (ch === '\\') esc = true
+      else if (ch === '"') inStr = false
+    } else if (ch === '"') inStr = true
+    else if (ch === '{') depth++
+    else if (ch === '}' && --depth === 0) return i + 1
+  }
+  return -1
+}
+
+const messageOf = j => (j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || ''
+
+// Text of one server-sent event line of an OpenAI-style stream ('' for anything else). An error
+// sent inside the stream is thrown.
+function sseText(line) {
+  const m = line.match(/^data:\s?(.*)$/)
+  if (!m || m[1].trim() === '[DONE]') return ''
+  let j
+  try { j = JSON.parse(m[1]) } catch (e) { return '' }
+  if (j.error) throw new AiError('http', j.error.code || j.error.status)
+  const ch = j.choices && j.choices[0]
+  return (ch && ((ch.delta && ch.delta.content) || (ch.message && ch.message.content))) || ''
+}
+
+// `onStage(stage, info)` hears what is happening, for the progress shown while waiting:
+// 'asking' (sent, nothing back yet), 'retry' (asked again without the extras), 'thinking' (the
+// provider answered and the model is working), 'writing' (the estimate is coming in; info.items
+// counts the foods so far), 'reading' (complete). `signal` cancels; after `timeoutMs` it gives up
+// with AiError('timeout'), whose `stage` says where it got stuck. Both settle straight away even
+// if the transport ignores the abort.
 export async function estimateMeal({ text, lang, cfg, key, fetchImpl = netFetch, onStage, signal, timeoutMs = ESTIMATE_TIMEOUT }) {
-  const stage = s => { if (onStage) onStage(s) }
+  let at = null
+  const stage = (s, info) => { at = s; if (onStage) onStage(s, info || {}) }
   const ctl = new AbortController()
   let timedOut = false
   const timer = setTimeout(() => { timedOut = true; ctl.abort() }, timeoutMs)
@@ -174,6 +216,39 @@ export async function estimateMeal({ text, lang, cfg, key, fetchImpl = netFetch,
     method: 'POST', headers: headersFor(cfg, key), signal: ctl.signal,
     body: JSON.stringify(buildEstimateRequest({ text, lang, model: cfg.model, provider: cfg.provider, plain })),
   }))
+
+  // Collects the answer from the stream as it arrives. A provider that ignores `stream` (or the
+  // native bridge, which hands over the whole body at once) sends one JSON body instead.
+  const read = async res => {
+    stage('thinking')
+    let raw = '', buf = '', content = '', items = 0
+    const take = chunk => {
+      raw += chunk
+      buf += chunk
+      const lines = buf.split(/\r?\n/)
+      buf = lines.pop()
+      for (const line of lines) content += sseText(line)
+      if (!content) return false
+      const n = (content.match(/"name"\s*:/g) || []).length
+      if (at !== 'writing' || n !== items) { items = n; stage('writing', { items }) }
+      return jsonEnd(content) > 0
+    }
+    if (res.body && typeof res.body.getReader === 'function') {
+      const reader = res.body.getReader()
+      const dec = new TextDecoder()
+      for (;;) {
+        const { done, value } = await race(reader.read())
+        if (done) break
+        if (take(dec.decode(value, { stream: true }))) { reader.cancel().catch(() => {}); break }
+      }
+    } else if (typeof res.text === 'function') take(await race(res.text()))
+    else return messageOf(await race(res.json().catch(() => null)))
+    if (buf) take('\n')
+    if (!content && raw.trim().startsWith('{')) { try { return messageOf(JSON.parse(raw)) } catch (e) { return raw } }
+    const end = jsonEnd(content)
+    return end > 0 ? content.slice(0, end) : content
+  }
+
   try {
     stage('asking')
     let res
@@ -183,12 +258,13 @@ export async function estimateMeal({ text, lang, cfg, key, fetchImpl = netFetch,
       stage('retry')
       res = await send(true)
     }
+    let content
+    // a stream that breaks off midway is a network failure (or the cancel/timeout above)
+    try { content = await read(res) } catch (e) { throw e instanceof AiError ? e : new AiError(ctl.signal.aborted ? 'cancelled' : 'network') }
     stage('reading')
-    const j = await race(res.json().catch(() => null))
-    const content = j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content
     return parseEstimate(content)
   } catch (e) {
-    if (e.kind === 'cancelled' && timedOut) throw new AiError('timeout')
+    if (e.kind === 'cancelled' && timedOut) { const err = new AiError('timeout'); err.stage = at; throw err }
     throw e
   } finally {
     clearTimeout(timer)

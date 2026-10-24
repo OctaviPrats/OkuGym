@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { parseEstimate, pickModels, buildEstimateRequest, estimateMeal, connect, baseOf, netFetch, AiError } from './ai.js'
+import { parseEstimate, pickModels, buildEstimateRequest, estimateMeal, connect, availableModels, baseOf, netFetch, jsonEnd, AiError } from './ai.js'
 
 // A fake fetch: each call takes the next scripted reply and records what was sent.
 function fakeFetch(replies) {
@@ -8,12 +8,28 @@ function fakeFetch(replies) {
     calls.push({ url, init, body: init.body ? JSON.parse(init.body) : null })
     const r = replies.shift()
     if (r instanceof Error) throw r
+    if (r.stream) return { ok: true, status: 200, body: streamOf(r.stream, r.hang) }
+    if (r.text != null) return { ok: true, status: 200, text: async () => r.text }
     return { ok: r.status >= 200 && r.status < 300, status: r.status, json: async () => r.json }
   }
   fn.calls = calls
   return fn
 }
 const chat = content => ({ status: 200, json: { choices: [{ message: { content } }] } })
+// A server-sent event stream that delivers `parts` (split anywhere) and then ends — or, with
+// `hang`, stays open, as a model padding its JSON with whitespace would.
+function streamOf(parts, hang) {
+  const enc = new TextEncoder()
+  let i = 0
+  return new ReadableStream({
+    pull(c) {
+      if (i < parts.length) c.enqueue(enc.encode(parts[i++]))
+      else if (!hang) c.close()
+      else return new Promise(() => {})
+    },
+  })
+}
+const sse = text => 'data: ' + JSON.stringify({ choices: [{ delta: { content: text } }] }) + '\n\n'
 const ESTIMATE = JSON.stringify({
   items: [
     { name: 'Caffè Latte', brand: 'Starbucks', serving: '1 Grande (473 ml)', grams: 473, kcal: 150, p: 11, f: 5, c: 15, confidence: 'high', source: 'published' },
@@ -120,12 +136,45 @@ describe('estimateMeal', () => {
     expect(f.calls[0].body).toMatchObject({ response_format: { type: 'json_object' }, reasoning_effort: 'low' })
     expect(f.calls[1].body.response_format).toBeUndefined()
     expect(f.calls[1].body.reasoning_effort).toBeUndefined()
-    expect(stages).toEqual(['asking', 'retry', 'reading'])
+    expect(stages).toEqual(['asking', 'retry', 'thinking', 'reading'])
   })
 
-  it('gives up after the timeout, even if the request never settles', async () => {
+  it('gives up after the timeout, even if the request never settles, and says where it was', async () => {
     const never = async () => new Promise(() => {})
-    await expect(estimateMeal({ text: 'x', lang: 'en', cfg, key: 'K', fetchImpl: never, timeoutMs: 20 })).rejects.toMatchObject({ kind: 'timeout' })
+    await expect(estimateMeal({ text: 'x', lang: 'en', cfg, key: 'K', fetchImpl: never, timeoutMs: 20 })).rejects.toMatchObject({ kind: 'timeout', stage: 'asking' })
+    const quiet = fakeFetch([{ stream: [': keep-alive\n\n'], hang: true }])
+    await expect(estimateMeal({ text: 'x', lang: 'en', cfg, key: 'K', fetchImpl: quiet, timeoutMs: 20 })).rejects.toMatchObject({ kind: 'timeout', stage: 'thinking' })
+  })
+
+  it('streams the answer and reports each stage, counting foods as they come in', async () => {
+    const half = Math.floor(ESTIMATE.length / 2)
+    const f = fakeFetch([{ stream: [sse(ESTIMATE.slice(0, 40)), sse(ESTIMATE.slice(40, half)), sse(ESTIMATE.slice(half)) + 'data: [DONE]\n\n'] }])
+    const seen = []
+    const r = await estimateMeal({ text: 'latte', lang: 'en', cfg, key: 'K', fetchImpl: f, onStage: (s, i) => seen.push(s === 'writing' ? s + i.items : s) })
+    expect(f.calls[0].body.stream).toBe(true)
+    expect(r.items.map(i => i.name)).toEqual(['Caffè Latte', 'Egg sandwich'])
+    expect(seen[0]).toBe('asking')
+    expect(seen[1]).toBe('thinking')
+    expect(seen).toContain('writing1')
+    expect(seen).toContain('writing2')
+    expect(seen[seen.length - 1]).toBe('reading')
+  })
+
+  it('stops reading once the JSON is complete, even if the stream stays open', async () => {
+    const chunks = ESTIMATE.match(/.{1,25}/gs).map(sse)
+    const f = fakeFetch([{ stream: [...chunks, sse('\n\n   ')], hang: true }])
+    const r = await estimateMeal({ text: 'latte', lang: 'en', cfg, key: 'K', fetchImpl: f, timeoutMs: 1000 })
+    expect(r.items).toHaveLength(2)
+  })
+
+  it('reads a whole JSON answer from a provider (or the native bridge) that doesn’t stream', async () => {
+    const f = fakeFetch([{ text: JSON.stringify({ choices: [{ message: { content: ESTIMATE } }] }) }])
+    expect((await estimateMeal({ text: 'latte', lang: 'en', cfg, key: 'K', fetchImpl: f })).items).toHaveLength(2)
+  })
+
+  it('reports an error sent inside the stream', async () => {
+    const f = fakeFetch([{ stream: ['data: {"error":{"code":503,"message":"overloaded"}}\n\n'] }])
+    await expect(estimateMeal({ text: 'x', lang: 'en', cfg, key: 'K', fetchImpl: f })).rejects.toMatchObject({ kind: 'http', status: 503 })
   })
 
   it('can be cancelled while waiting', async () => {
@@ -141,6 +190,15 @@ describe('estimateMeal', () => {
     await expect(estimateMeal({ text: 'x', lang: 'en', cfg, key: 'K', fetchImpl: fakeFetch([{ status: 429, json: {} }]) })).rejects.toMatchObject({ kind: 'limit' })
     await expect(estimateMeal({ text: 'x', lang: 'en', cfg, key: 'K', fetchImpl: fakeFetch([new TypeError('offline')]) })).rejects.toMatchObject({ kind: 'network' })
     await expect(estimateMeal({ text: 'x', lang: 'en', cfg, key: 'K', fetchImpl: fakeFetch([{ status: 200, json: {} }]) })).rejects.toMatchObject({ kind: 'format' })
+  })
+})
+
+describe('jsonEnd', () => {
+  it('finds where the first object closes, ignoring braces inside strings', () => {
+    expect(jsonEnd('{"a":1}  ')).toBe(7)
+    expect(jsonEnd('ok: {"a":"}{","b":{"c":"\\"}"}} tail')).toBe(30)
+    expect(jsonEnd('{"a":{"b":1}')).toBe(-1)
+    expect(jsonEnd('no json')).toBe(-1)
   })
 })
 
@@ -191,6 +249,11 @@ describe('connect', () => {
   it('reports a used-up quota when no model answers', async () => {
     const f = fakeFetch([models(['qwen/qwen3-32b']), { status: 429, json: {} }])
     await expect(connect({ provider: 'groq' }, 'K', f)).rejects.toMatchObject({ kind: 'limit' })
+  })
+
+  it('lists the models a key can use, best first', async () => {
+    const f = fakeFetch([models(['models/gemini-3-flash-lite', 'models/gemini-3-flash', 'models/text-embedding-004'])])
+    expect(await availableModels({ provider: 'gemini' }, 'K', f)).toEqual(['gemini-3-flash', 'gemini-3-flash-lite'])
   })
 
   it('reports when the provider has no usable model', async () => {

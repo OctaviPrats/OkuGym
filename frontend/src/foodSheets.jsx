@@ -9,7 +9,7 @@ import {
   emptyNutrition, goalOn, withGoal, totals, dayLog, logFoods, quickEntry, lastMeal, repeatMeal,
   recentFoods, macroShares, SLOTS, SLOT_NAMES,
 } from './lib/nutrition.js'
-import { PROVIDERS, aiReady, getKey, setKey, connect, estimateMeal } from './lib/ai.js'
+import { PROVIDERS, aiReady, getKey, setKey, connect, availableModels, estimateMeal } from './lib/ai.js'
 import Icon from './components/Icon.jsx'
 import { Button, Check, NumberField, Row, Section, Segmented, SearchField, SelectRow, Stepper, TextField } from './components/ui.jsx'
 
@@ -37,43 +37,65 @@ export function aiErrorText(e) {
     case 'network': return t('Couldn’t reach the AI provider. Check your connection.')
     case 'model': return t('No usable model found on this account.')
     case 'format': return t('Couldn’t read the AI’s answer — try again, or describe it differently.')
-    case 'timeout': return t('The AI took too long to answer. Try again, or use quick add.')
+    case 'timeout': return e.stage === 'asking' || e.stage === 'retry'
+      ? t('No answer from {0} after {1} s. Check your connection and try again.', providerName(e.provider), e.secs)
+      : t('{0} was still working after {1} s. Try again, or pick a faster model in Settings → Food.', providerName(e.provider), e.secs)
     default: return t('The AI provider returned an error ({0}).', (e && e.status) || '?')
   }
 }
 
 const providerName = p => (PROVIDERS[p] && p !== 'custom' ? PROVIDERS[p].name : t('Custom'))
 
-// Runs an estimate with its progress: `stage` is null when idle, else what estimateMeal last
-// reported. Leaving the sheet cancels a request still on its way. A cancel is not an error.
+// Runs an estimate with its progress: `prog` is null when idle, else the stage estimateMeal
+// last reported ({ stage, items }). Leaving the sheet cancels a request still on its way. A
+// cancel is not an error; a timeout carries the provider and seconds for its message.
 function useEstimate(cfg) {
-  const [stage, setStage] = useState(null)
+  const [prog, setProg] = useState(null)
   const ctl = useRef(null)
   useEffect(() => () => { if (ctl.current) ctl.current.abort() }, [])
   const run = async text => {
     ctl.current = new AbortController()
-    setStage('asking')
-    try { return await estimateMeal({ text, lang: getLang(), cfg, key: getKey(), onStage: setStage, signal: ctl.current.signal }) }
-    finally { ctl.current = null; setStage(null) }
+    setProg({ stage: 'asking', items: 0 })
+    const t0 = Date.now()
+    try {
+      return await estimateMeal({ text, lang: getLang(), cfg, key: getKey(), signal: ctl.current.signal,
+        onStage: (stage, info) => setProg({ stage, items: info.items || 0 }) })
+    } catch (e) {
+      if (e.kind === 'timeout') { e.provider = cfg.provider; e.secs = Math.round((Date.now() - t0) / 1000) }
+      throw e
+    } finally { ctl.current = null; setProg(null) }
   }
-  return { stage, busy: stage != null, run, cancel: () => { if (ctl.current) ctl.current.abort() } }
+  return { prog, busy: prog != null, run, cancel: () => { if (ctl.current) ctl.current.abort() } }
 }
 
-const STAGE_TEXT = { asking: 'Asking {0}…', retry: 'Asking {0} again…', reading: 'Reading the answer…' }
+// How far along each stage is, for the bar. Thinking is where a slow free model spends its time.
+const STAGE_AT = { asking: 0.12, retry: 0.12, thinking: 0.35, writing: 0.6, reading: 1 }
 
-// While an estimate is on its way: what's happening, for how long, and a way out. The API
-// answers all at once, so there's no percentage to show — the stage and the seconds are the
-// honest progress. (The ticking clock also keeps the screen repainting while nothing else moves.)
-function AiProgress({ stage, provider, onCancel }) {
+function stageText({ stage, items }, provider) {
+  const name = providerName(provider)
+  switch (stage) {
+    case 'retry': return t('Asking {0} again…', name)
+    case 'thinking': return t('{0} is thinking…', name)
+    case 'writing': return items === 1 ? t('Writing the estimate · 1 food…') : items > 1 ? t('Writing the estimate · {0} foods…', items) : t('Writing the estimate…')
+    case 'reading': return t('Reading the answer…')
+    default: return t('Asking {0}…', name)
+  }
+}
+
+// While an estimate is on its way: what's happening, for how long, and a way out. The answer
+// streams in, so the stage is real: sent, the model thinking, the foods being written. (The
+// ticking clock also keeps the screen repainting while nothing else moves.)
+function AiProgress({ prog, provider, onCancel }) {
   const [secs, setSecs] = useState(0)
   useEffect(() => { const id = setInterval(() => setSecs(s => s + 1), 1000); return () => clearInterval(id) }, [])
+  const at = Math.min(0.92, (STAGE_AT[prog.stage] || 0.12) + (prog.stage === 'writing' ? prog.items * 0.08 : 0))
   return <div className="aiwait">
     <div className="row between">
-      <span role="status">{t(STAGE_TEXT[stage] || STAGE_TEXT.asking, providerName(provider))}</span>
+      <span role="status">{stageText(prog, provider)}</span>
       <span className="muted" aria-hidden="true">{secs} s</span>
     </div>
-    <div className="kbar indet" aria-hidden="true"><span /></div>
-    {secs >= 15 && <div className="muted small">{t('Free models can be slow at busy times — still working on it.')}</div>}
+    <div className="kbar live" aria-hidden="true"><span style={{ width: at * 100 + '%' }} /></div>
+    {secs >= 20 && prog.stage !== 'writing' && <div className="muted small">{t('Free models can be slow at busy times — still working on it.')}</div>}
     <div className="act"><Button size="sm" variant="ghost" onClick={onCancel}>{t('Cancel')}</Button></div>
   </div>
 }
@@ -137,7 +159,7 @@ function AddFood({ slot, iso, close }) {
         <label htmlFor="describe">{t('Describe what you ate')}</label>
         <textarea id="describe" rows={2} value={text} maxLength={400} readOnly={est.busy} onChange={e => setText(e.target.value)}
           placeholder={t('e.g. a large latte and an egg sandwich from Starbucks')} />
-        {est.busy ? <AiProgress stage={est.stage} provider={N.ai.provider} onCancel={est.cancel} /> : (
+        {est.busy ? <AiProgress prog={est.prog} provider={N.ai.provider} onCancel={est.cancel} /> : (
           <div className="act">
             <Button variant="primary" size="sm" icon="sparkles" disabled={!text.trim()} onClick={estimate}>{t('Get estimate')}</Button>
           </div>
@@ -256,7 +278,7 @@ function Estimate({ res, text, slot, iso, done, close }) {
         {left != null && <span>{left >= 0 ? t('{0} kcal left after this', fmtNum(left)) : t('{0} kcal over after this', fmtNum(-left))}</span>}
       </div>
     </div>
-    {busy && <div className="card"><AiProgress stage={est.stage} provider={N.ai.provider} onCancel={est.cancel} /></div>}
+    {busy && <div className="card"><AiProgress prog={est.prog} provider={N.ai.provider} onCancel={est.cancel} /></div>}
     <Button variant="primary" disabled={!chosen.length || busy} onClick={add}>
       {t(chosen.length === 1 ? 'Add {0} item to {1}' : 'Add {0} items to {1}', chosen.length, slotName(slot))}
     </Button>
@@ -436,6 +458,16 @@ function AiConnect({ close }) {
   const connected = aiReady(N)
   const canPaste = !!(navigator.clipboard && navigator.clipboard.readText)
   const info = PROVIDER_INFO[provider]
+  // The other models this key can use, to switch to a faster one without connecting again.
+  const [models, setModels] = useState(null)
+  useEffect(() => {
+    if (!connected) return
+    let live = true
+    availableModels({ provider: cur.provider, base: cur.base }, getKey())
+      .then(ms => { if (live) setModels(ms.slice(0, 6)) }).catch(() => {})
+    return () => { live = false }
+  }, [connected, cur.provider, cur.base])
+  const choices = models && cur.model ? (models.includes(cur.model) ? models : [cur.model, ...models]) : []
 
   const test = async () => {
     const k = key.trim()
@@ -496,6 +528,13 @@ function AiConnect({ close }) {
       {busy ? t('Checking…') : t('Test and save')}
     </Button>
     {connected && <>
+      {choices.length > 1 && <><div style={{ height: 20 }} /><Section title={t('Model')} footer={t('Lite models answer faster; the others know more products.')}>
+        {choices.map(id => <button key={id} className="lrow tap" onClick={() => mutate(n => { n.ai.model = id })}>
+          <span className="lrow-m"><span className="lrow-t row" style={{ gap: 8 }}>{id}
+            {/lite/i.test(id) && <span className="tag nocap ok">{t('Faster')}</span>}</span></span>
+          {id === cur.model && <Icon name="check" className="lrow-k" />}
+        </button>)}
+      </Section></>}
       <p className="sect-f" style={{ textAlign: 'center' }}>{t('Connected: {0} · {1}', PROVIDERS[cur.provider] && cur.provider !== 'custom' ? PROVIDERS[cur.provider].name : t('Custom'), cur.model)}</p>
       <Button variant="ghost" className="dim" onClick={disconnect}>{t('Disconnect')}</Button>
     </>}

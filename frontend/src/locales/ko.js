@@ -742,5 +742,14 @@ export default {
   'Asking {0} again…': '{0}에 다시 묻는 중…',
   'Reading the answer…': '답변 읽는 중…',
   'Free models can be slow at busy times — still working on it.': '무료 모델은 사용자가 많은 시간에 느릴 수 있어요 — 아직 처리 중이에요.',
-  'The AI took too long to answer. Try again, or use quick add.': 'AI 응답이 너무 오래 걸렸어요. 다시 시도하거나 빠른 추가를 이용하세요.',
+  // streamed estimate progress, model choice
+  '{0} is thinking…': '{0}이(가) 생각하는 중…',
+  'Writing the estimate…': '추정 결과 작성 중…',
+  'Writing the estimate · 1 food…': '추정 결과 작성 중 · 음식 1개…',
+  'Writing the estimate · {0} foods…': '추정 결과 작성 중 · 음식 {0}개…',
+  'No answer from {0} after {1} s. Check your connection and try again.': '{1}초가 지나도 {0}에서 응답이 없어요. 연결을 확인하고 다시 시도하세요.',
+  '{0} was still working after {1} s. Try again, or pick a faster model in Settings → Food.': '{1}초가 지나도 {0}이(가) 아직 처리 중이었어요. 다시 시도하거나 설정 → 식단에서 더 빠른 모델을 고르세요.',
+  'Model': '모델',
+  'Lite models answer faster; the others know more products.': 'Lite 모델은 더 빨리 답하고, 다른 모델은 더 많은 제품을 알아요.',
+  'Faster': '더 빠름',
 }

@@ -967,8 +967,8 @@ h4.sec{
 .describe .act{display:flex;justify-content:flex-end;margin-top:8px}
 .aiwait{display:flex;flex-direction:column;gap:8px;margin-top:8px;font-size:15px}
 .aiwait .act{display:flex;justify-content:flex-end}
-.kbar.indet>span{width:35%;animation:kindet 1.4s ease-in-out infinite}
-@keyframes kindet{from{transform:translateX(-100%)}to{transform:translateX(290%)}}
+.kbar.live>span{transition:width .6s var(--ease);animation:klive 1.6s ease-in-out infinite}
+@keyframes klive{50%{opacity:.5}}
 .quote{display:flex;gap:10px;align-items:flex-start;background:var(--surface);border-radius:var(--r);
   padding:11px 14px;margin-bottom:14px;font-size:15px;line-height:1.35;color:var(--label-2)}
 .quote .icn{flex:none;font-size:18px;margin-top:1px}

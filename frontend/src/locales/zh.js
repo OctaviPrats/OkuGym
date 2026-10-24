@@ -742,5 +742,14 @@ export default {
   'Asking {0} again…': '正在重新询问 {0}…',
   'Reading the answer…': '正在读取回答…',
   'Free models can be slow at busy times — still working on it.': '免费模型在高峰时段可能较慢——仍在处理中。',
-  'The AI took too long to answer. Try again, or use quick add.': 'AI 响应时间过长。请重试，或使用快速添加。',
+  // streamed estimate progress, model choice
+  '{0} is thinking…': '{0} 正在思考…',
+  'Writing the estimate…': '正在生成估算…',
+  'Writing the estimate · 1 food…': '正在生成估算 · 1 种食物…',
+  'Writing the estimate · {0} foods…': '正在生成估算 · {0} 种食物…',
+  'No answer from {0} after {1} s. Check your connection and try again.': '{1} 秒后仍未收到 {0} 的回复。请检查网络后重试。',
+  '{0} was still working after {1} s. Try again, or pick a faster model in Settings → Food.': '{1} 秒后 {0} 仍在处理。请重试，或在“设置 → 饮食”中选择更快的模型。',
+  'Model': '模型',
+  'Lite models answer faster; the others know more products.': 'Lite 模型回复更快；其他模型认识的产品更多。',
+  'Faster': '更快',
 }

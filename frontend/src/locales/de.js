@@ -759,5 +759,14 @@ export default {
   'Asking {0} again…': '{0} wird erneut gefragt…',
   'Reading the answer…': 'Antwort wird gelesen…',
   'Free models can be slow at busy times — still working on it.': 'Kostenlose Modelle können zu Stoßzeiten langsam sein — es wird noch gearbeitet.',
-  'The AI took too long to answer. Try again, or use quick add.': 'Die KI hat zu lange gebraucht. Versuch es noch einmal oder nutze den Schnelleintrag.',
+  // streamed estimate progress, model choice
+  '{0} is thinking…': '{0} denkt nach…',
+  'Writing the estimate…': 'Schätzung wird geschrieben…',
+  'Writing the estimate · 1 food…': 'Schätzung wird geschrieben · 1 Lebensmittel…',
+  'Writing the estimate · {0} foods…': 'Schätzung wird geschrieben · {0} Lebensmittel…',
+  'No answer from {0} after {1} s. Check your connection and try again.': 'Keine Antwort von {0} nach {1} s. Prüf die Verbindung und versuch es noch einmal.',
+  '{0} was still working after {1} s. Try again, or pick a faster model in Settings → Food.': '{0} hat nach {1} s noch gearbeitet. Versuch es noch einmal oder wähl unter Einstellungen → Essen ein schnelleres Modell.',
+  'Model': 'Modell',
+  'Lite models answer faster; the others know more products.': 'Lite-Modelle antworten schneller, die anderen kennen mehr Produkte.',
+  'Faster': 'Schneller',
 }
