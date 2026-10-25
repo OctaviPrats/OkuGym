@@ -36,8 +36,10 @@ a food log that doesn't ask you to know how many calories a latte has.
   plans. Only the meal description is ever sent.
 - **You see what the AI is doing.** The answer streams in, so while you wait the sheet says
   whether the request is still on its way, the model is thinking, or the foods are being written
-  (and how many so far), with the seconds and a Cancel button. Free models can be slow at busy
-  times; if yours is, pick a faster one (a *Lite* model) in the connection settings.
+  (and how many so far), with the seconds and a Cancel button. Free models get overloaded at
+  busy times: when yours doesn't start answering within 30 seconds, or says it's overloaded, the
+  next model on your key (a faster *Lite* one, say) is tried, and the one that answers is kept.
+  You can also pick the model yourself in the connection settings.
 - **One tap the second time.** Everything you log lands in *My foods*; the add sheet lists what
   you usually eat at that meal first, keeps favourites, and repeats your last breakfast (or lunch,
   or dinner) in one go. **Quick add** takes just the calories when that's all you know.

@@ -752,4 +752,9 @@ export default {
   'Model': 'Model',
   'Lite models answer faster; the others know more products.': 'Lite modeller daha hızlı yanıt verir; diğerleri daha çok ürün bilir.',
   'Faster': 'Daha hızlı',
+  // overloaded model, fallback
+  '{0} is busy · trying {1}…': '{0} yoğun · {1} deneniyor…',
+  '{0} is overloaded right now (error {1}). Try again in a few minutes, or use quick add.': '{0} şu anda aşırı yüklü (hata {1}). Birkaç dakika sonra tekrar dene ya da hızlı eklemeyi kullan.',
+  '{0} isn’t answering right now. Try again in a few minutes, or use quick add.': '{0} şu anda yanıt vermiyor. Birkaç dakika sonra tekrar dene ya da hızlı eklemeyi kullan.',
+  'Now using {0} — {1} was overloaded.': 'Artık {0} kullanılıyor — {1} aşırı yüklüydü.',
 }

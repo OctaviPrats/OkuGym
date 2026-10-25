@@ -752,4 +752,9 @@ export default {
   'Model': 'मॉडल',
   'Lite models answer faster; the others know more products.': 'Lite मॉडल जल्दी जवाब देते हैं; बाकी ज़्यादा उत्पाद जानते हैं।',
   'Faster': 'तेज़',
+  // overloaded model, fallback
+  '{0} is busy · trying {1}…': '{0} व्यस्त है · {1} आज़मा रहे हैं…',
+  '{0} is overloaded right now (error {1}). Try again in a few minutes, or use quick add.': '{0} पर अभी बहुत ज़्यादा लोड है (त्रुटि {1})। कुछ मिनट बाद फिर कोशिश करें, या झटपट एंट्री का इस्तेमाल करें।',
+  '{0} isn’t answering right now. Try again in a few minutes, or use quick add.': '{0} अभी जवाब नहीं दे रहा। कुछ मिनट बाद फिर कोशिश करें, या झटपट एंट्री का इस्तेमाल करें।',
+  'Now using {0} — {1} was overloaded.': 'अब {0} इस्तेमाल हो रहा है — {1} पर ज़्यादा लोड था।',
 }

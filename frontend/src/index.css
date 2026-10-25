@@ -829,12 +829,12 @@ h4.sec{
 #toast{
   position:fixed;left:50%;transform:translateX(-50%) translateY(6px);
   bottom:calc(96px + var(--sab));z-index:200;
-  background:color-mix(in srgb,var(--surface-2) 88%,transparent);
+  background:color-mix(in srgb,var(--surface-2) 96%,transparent);
   backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);
-  border-radius:99px;padding:11px 20px;font-size:15px;font-weight:500;
+  border-radius:22px;padding:11px 20px;font-size:15px;font-weight:500;
   box-shadow:0 10px 30px -6px rgba(0,0,0,.5);
   opacity:0;pointer-events:none;transition:opacity var(--med),transform var(--med) var(--ease);
-  max-width:88vw;text-align:center;
+  max-width:88vw;text-align:center;text-wrap:balance;
 }
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
@@ -966,6 +966,7 @@ h4.sec{
 .describe textarea::placeholder{color:var(--label-3)}
 .describe .act{display:flex;justify-content:flex-end;margin-top:8px}
 .aiwait{display:flex;flex-direction:column;gap:8px;margin-top:8px;font-size:15px}
+.aiwait .row>[aria-hidden]{white-space:nowrap;margin-left:12px}
 .aiwait .act{display:flex;justify-content:flex-end}
 .kbar.live>span{transition:width .6s var(--ease);animation:klive 1.6s ease-in-out infinite}
 @keyframes klive{50%{opacity:.5}}

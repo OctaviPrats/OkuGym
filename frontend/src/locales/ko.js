@@ -752,4 +752,9 @@ export default {
   'Model': '모델',
   'Lite models answer faster; the others know more products.': 'Lite 모델은 더 빨리 답하고, 다른 모델은 더 많은 제품을 알아요.',
   'Faster': '더 빠름',
+  // overloaded model, fallback
+  '{0} is busy · trying {1}…': '{0} 사용량 많음 · {1} 시도 중…',
+  '{0} is overloaded right now (error {1}). Try again in a few minutes, or use quick add.': '{0}의 사용량이 지금 너무 많아요(오류 {1}). 몇 분 후 다시 시도하거나 빠른 추가를 이용하세요.',
+  '{0} isn’t answering right now. Try again in a few minutes, or use quick add.': '{0}이(가) 지금 응답하지 않아요. 몇 분 후 다시 시도하거나 빠른 추가를 이용하세요.',
+  'Now using {0} — {1} was overloaded.': '이제 {0}을(를) 사용해요 — {1}의 사용량이 너무 많았어요.',
 }

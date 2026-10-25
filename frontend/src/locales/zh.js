@@ -752,4 +752,9 @@ export default {
   'Model': '模型',
   'Lite models answer faster; the others know more products.': 'Lite 模型回复更快；其他模型认识的产品更多。',
   'Faster': '更快',
+  // overloaded model, fallback
+  '{0} is busy · trying {1}…': '{0} 繁忙 · 正在尝试 {1}…',
+  '{0} is overloaded right now (error {1}). Try again in a few minutes, or use quick add.': '{0} 当前负载过高（错误 {1}）。请几分钟后重试，或使用快速添加。',
+  '{0} isn’t answering right now. Try again in a few minutes, or use quick add.': '{0} 当前没有响应。请几分钟后重试，或使用快速添加。',
+  'Now using {0} — {1} was overloaded.': '现已改用 {0}——{1} 负载过高。',
 }

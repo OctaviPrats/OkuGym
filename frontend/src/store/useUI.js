@@ -35,7 +35,8 @@ export const useUI = create((set, get) => ({
   toast(msg) {
     set({ toastMsg: msg })
     clearTimeout(toastTm)
-    toastTm = setTimeout(() => set({ toastMsg: '' }), 2200)
+    // long enough to read: a short confirmation goes quickly, an explanation stays a while
+    toastTm = setTimeout(() => set({ toastMsg: '' }), Math.min(7000, Math.max(2200, String(msg).length * 55)))
   },
 
   startRest(sec) {

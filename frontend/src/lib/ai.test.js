@@ -30,6 +30,7 @@ function streamOf(parts, hang) {
   })
 }
 const sse = text => 'data: ' + JSON.stringify({ choices: [{ delta: { content: text } }] }) + '\n\n'
+const modelList = ids => ({ status: 200, json: { data: ids.map(id => ({ id })) } })
 const ESTIMATE = JSON.stringify({
   items: [
     { name: 'Caffè Latte', brand: 'Starbucks', serving: '1 Grande (473 ml)', grams: 473, kcal: 150, p: 11, f: 5, c: 15, confidence: 'high', source: 'published' },
@@ -174,7 +175,39 @@ describe('estimateMeal', () => {
 
   it('reports an error sent inside the stream', async () => {
     const f = fakeFetch([{ stream: ['data: {"error":{"code":503,"message":"overloaded"}}\n\n'] }])
-    await expect(estimateMeal({ text: 'x', lang: 'en', cfg, key: 'K', fetchImpl: f })).rejects.toMatchObject({ kind: 'http', status: 503 })
+    await expect(estimateMeal({ text: 'x', lang: 'en', cfg, key: 'K', fetchImpl: f })).rejects.toMatchObject({ kind: 'busy', status: 503 })
+  })
+
+  it('moves to another model on the key when the first is overloaded', async () => {
+    const f = fakeFetch([{ status: 503, json: {} }, modelList(['models/gemini-3-flash', 'models/gemini-3-flash-lite']), chat(ESTIMATE)])
+    const seen = []
+    const r = await estimateMeal({ text: 'latte', lang: 'en', cfg, key: 'K', fetchImpl: f, onStage: (s, i) => seen.push(s === 'switch' ? s + ':' + i.model : s) })
+    expect(r.items).toHaveLength(2)
+    expect(r.model).toBe('gemini-3-flash-lite')
+    expect(f.calls[2].body.model).toBe('gemini-3-flash-lite')
+    expect(seen.slice(0, 2)).toEqual(['asking', 'switch:gemini-3-flash-lite'])
+  })
+
+  it('treats a model that doesn’t start answering as overloaded', async () => {
+    const f = async (url, init) => {
+      if (url.endsWith('/models')) return { ok: true, status: 200, json: async () => ({ data: [{ id: 'gemini-3-flash' }, { id: 'gemini-3-flash-lite' }] }) }
+      if (JSON.parse(init.body).model === 'gemini-3-flash') return new Promise((_, reject) => init.signal.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError'))))
+      return { ok: true, status: 200, json: async () => ({ choices: [{ message: { content: ESTIMATE } }] }) }
+    }
+    const r = await estimateMeal({ text: 'latte', lang: 'en', cfg, key: 'K', fetchImpl: f, answerMs: 20 })
+    expect(r.model).toBe('gemini-3-flash-lite')
+  })
+
+  it('reports the first error when no model answers', async () => {
+    const f = fakeFetch([{ status: 503, json: {} }, modelList(['gemini-3-flash', 'gemini-3-flash-lite', 'gemini-2.5-flash']), { status: 503, json: {} }, { status: 429, json: {} }])
+    await expect(estimateMeal({ text: 'x', lang: 'en', cfg, key: 'K', fetchImpl: f })).rejects.toMatchObject({ kind: 'busy', status: 503 })
+    expect(f.calls).toHaveLength(4)
+  })
+
+  it('gives a local model all the time it needs', async () => {
+    const never = async () => new Promise(() => {})
+    const local = { provider: 'custom', base: 'http://localhost:11434/v1', model: 'qwen3' }
+    await expect(estimateMeal({ text: 'x', lang: 'en', cfg: local, key: '', fetchImpl: never, answerMs: 5, timeoutMs: 40 })).rejects.toMatchObject({ kind: 'timeout' })
   })
 
   it('can be cancelled while waiting', async () => {
@@ -188,6 +221,7 @@ describe('estimateMeal', () => {
   it('names the failure: rejected key, used-up quota, no network', async () => {
     await expect(estimateMeal({ text: 'x', lang: 'en', cfg, key: 'K', fetchImpl: fakeFetch([{ status: 401, json: {} }]) })).rejects.toMatchObject({ kind: 'key' })
     await expect(estimateMeal({ text: 'x', lang: 'en', cfg, key: 'K', fetchImpl: fakeFetch([{ status: 429, json: {} }]) })).rejects.toMatchObject({ kind: 'limit' })
+    await expect(estimateMeal({ text: 'x', lang: 'en', cfg, key: 'K', fetchImpl: fakeFetch([{ status: 503, json: {} }, modelList(['gemini-3-flash'])]) })).rejects.toMatchObject({ kind: 'busy', status: 503 })
     await expect(estimateMeal({ text: 'x', lang: 'en', cfg, key: 'K', fetchImpl: fakeFetch([new TypeError('offline')]) })).rejects.toMatchObject({ kind: 'network' })
     await expect(estimateMeal({ text: 'x', lang: 'en', cfg, key: 'K', fetchImpl: fakeFetch([{ status: 200, json: {} }]) })).rejects.toMatchObject({ kind: 'format' })
   })

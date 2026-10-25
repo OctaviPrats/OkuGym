@@ -37,7 +37,10 @@ export function aiErrorText(e) {
     case 'network': return t('Couldn’t reach the AI provider. Check your connection.')
     case 'model': return t('No usable model found on this account.')
     case 'format': return t('Couldn’t read the AI’s answer — try again, or describe it differently.')
-    case 'timeout': return e.stage === 'asking' || e.stage === 'retry'
+    case 'busy': return e.status
+      ? t('{0} is overloaded right now (error {1}). Try again in a few minutes, or use quick add.', providerName(e.provider), e.status)
+      : t('{0} isn’t answering right now. Try again in a few minutes, or use quick add.', providerName(e.provider))
+    case 'timeout': return e.stage === 'asking' || e.stage === 'retry' || e.stage === 'switch'
       ? t('No answer from {0} after {1} s. Check your connection and try again.', providerName(e.provider), e.secs)
       : t('{0} was still working after {1} s. Try again, or pick a faster model in Settings → Food.', providerName(e.provider), e.secs)
     default: return t('The AI provider returned an error ({0}).', (e && e.status) || '?')
@@ -47,8 +50,10 @@ export function aiErrorText(e) {
 const providerName = p => (PROVIDERS[p] && p !== 'custom' ? PROVIDERS[p].name : t('Custom'))
 
 // Runs an estimate with its progress: `prog` is null when idle, else the stage estimateMeal
-// last reported ({ stage, items }). Leaving the sheet cancels a request still on its way. A
-// cancel is not an error; a timeout carries the provider and seconds for its message.
+// last reported ({ stage, items, model }). Leaving the sheet cancels a request still on its way.
+// A cancel is not an error; errors carry the provider (and a timeout its seconds) for their
+// message. When the saved model was overloaded and another one answered, that one is kept, so
+// the next estimate doesn't wait on the busy one again.
 function useEstimate(cfg) {
   const [prog, setProg] = useState(null)
   const ctl = useRef(null)
@@ -58,10 +63,16 @@ function useEstimate(cfg) {
     setProg({ stage: 'asking', items: 0 })
     const t0 = Date.now()
     try {
-      return await estimateMeal({ text, lang: getLang(), cfg, key: getKey(), signal: ctl.current.signal,
-        onStage: (stage, info) => setProg({ stage, items: info.items || 0 }) })
+      const res = await estimateMeal({ text, lang: getLang(), cfg, key: getKey(), signal: ctl.current.signal,
+        onStage: (stage, info) => setProg({ stage, items: info.items || 0, model: info.model }) })
+      if (res.model && res.model !== cfg.model) {
+        mutate(n => { if (n.ai) n.ai.model = res.model })
+        toast(t('Now using {0} — {1} was overloaded.', res.model, cfg.model))
+      }
+      return res
     } catch (e) {
-      if (e.kind === 'timeout') { e.provider = cfg.provider; e.secs = Math.round((Date.now() - t0) / 1000) }
+      e.provider = cfg.provider
+      if (e.kind === 'timeout') e.secs = Math.round((Date.now() - t0) / 1000)
       throw e
     } finally { ctl.current = null; setProg(null) }
   }
@@ -69,12 +80,13 @@ function useEstimate(cfg) {
 }
 
 // How far along each stage is, for the bar. Thinking is where a slow free model spends its time.
-const STAGE_AT = { asking: 0.12, retry: 0.12, thinking: 0.35, writing: 0.6, reading: 1 }
+const STAGE_AT = { asking: 0.12, retry: 0.12, switch: 0.12, thinking: 0.35, writing: 0.6, reading: 1 }
 
-function stageText({ stage, items }, provider) {
+function stageText({ stage, items, model }, provider) {
   const name = providerName(provider)
   switch (stage) {
     case 'retry': return t('Asking {0} again…', name)
+    case 'switch': return t('{0} is busy · trying {1}…', name, model)
     case 'thinking': return t('{0} is thinking…', name)
     case 'writing': return items === 1 ? t('Writing the estimate · 1 food…') : items > 1 ? t('Writing the estimate · {0} foods…', items) : t('Writing the estimate…')
     case 'reading': return t('Reading the answer…')
@@ -477,7 +489,7 @@ function AiConnect({ close }) {
       setKey(k)
       mutate(n => { n.ai = { on: true, provider, model, base: provider === 'custom' ? base : null } })
       close(); toast(t('Connected · {0}', model))
-    } catch (e) { toast(aiErrorText(e)) }
+    } catch (e) { e.provider = provider; toast(aiErrorText(e)) }
     setBusy(false)
   }
   const disconnect = () => { setKey(''); mutate(n => { n.ai = null }); close(); toast(t('AI disconnected')) }

@@ -21,8 +21,9 @@ export const setKey = k => { try { if (k) localStorage.setItem(KEY, k); else loc
 // A custom endpoint (a local Ollama) may need no key at all.
 export const aiReady = N => !!(N && N.ai && N.ai.on && N.ai.model && (getKey() || N.ai.provider === 'custom'))
 
-// kind: 'key' (rejected), 'limit' (rate limit / free quota used up), 'network', 'model'
-// (no usable model), 'format' (an answer we can't read), 'timeout', 'cancelled', 'http' (anything else)
+// kind: 'key' (rejected), 'limit' (rate limit / free quota used up), 'busy' (the model is
+// overloaded or not answering — 500–504, common on free tiers), 'network', 'model' (no usable
+// model), 'format' (an answer we can't read), 'timeout', 'cancelled', 'http' (anything else)
 export class AiError extends Error {
   constructor(kind, status) { super(kind); this.kind = kind; this.status = status }
 }
@@ -49,12 +50,13 @@ function headersFor(cfg, key) {
   return h
 }
 
+const kindOf = s => (s === 401 || s === 403 ? 'key' : s === 429 ? 'limit' : s >= 500 && s <= 504 ? 'busy' : 'http')
+
 async function call(fetchImpl, url, init) {
   let res
   try { res = await fetchImpl(url, init) } catch (e) { throw new AiError(init && init.signal && init.signal.aborted ? 'cancelled' : 'network') }
   if (res.ok) return res
-  const s = res.status
-  throw new AiError(s === 401 || s === 403 ? 'key' : s === 429 ? 'limit' : 'http', s)
+  throw new AiError(kindOf(res.status), res.status)
 }
 
 /* ------------------------------------------------------------- models -- */
@@ -160,6 +162,9 @@ export function buildEstimateRequest({ text, lang, model, provider, plain = fals
 }
 
 export const ESTIMATE_TIMEOUT = 180000
+// A hosted model that hasn't started answering by then is treated as overloaded, and the next
+// model on the key is tried. (Free Gemini models can sit on a request for minutes, then 503.)
+export const ANSWER_TIMEOUT = 30000
 
 // Where the first JSON object in `s` closes (the index just past its '}'), or -1 while it is
 // still open. Lets reading stop as soon as the answer is complete: in JSON mode a model can
@@ -188,18 +193,19 @@ function sseText(line) {
   if (!m || m[1].trim() === '[DONE]') return ''
   let j
   try { j = JSON.parse(m[1]) } catch (e) { return '' }
-  if (j.error) throw new AiError('http', j.error.code || j.error.status)
+  if (j.error) throw new AiError(kindOf(Number(j.error.code)), j.error.code || j.error.status)
   const ch = j.choices && j.choices[0]
   return (ch && ((ch.delta && ch.delta.content) || (ch.message && ch.message.content))) || ''
 }
 
 // `onStage(stage, info)` hears what is happening, for the progress shown while waiting:
-// 'asking' (sent, nothing back yet), 'retry' (asked again without the extras), 'thinking' (the
-// provider answered and the model is working), 'writing' (the estimate is coming in; info.items
-// counts the foods so far), 'reading' (complete). `signal` cancels; after `timeoutMs` it gives up
-// with AiError('timeout'), whose `stage` says where it got stuck. Both settle straight away even
-// if the transport ignores the abort.
-export async function estimateMeal({ text, lang, cfg, key, fetchImpl = netFetch, onStage, signal, timeoutMs = ESTIMATE_TIMEOUT }) {
+// 'asking' (sent, nothing back yet), 'retry' (asked again without the extras), 'switch' (the model
+// was busy, info.model is the next one tried), 'thinking' (the provider answered and the model is
+// working), 'writing' (the estimate is coming in; info.items counts the foods so far), 'reading'
+// (complete). `signal` cancels; after `timeoutMs` it gives up with AiError('timeout'), whose
+// `stage` says where it got stuck. Both settle straight away even if the transport ignores the
+// abort. The result says which `model` answered: not cfg.model if that one was busy.
+export async function estimateMeal({ text, lang, cfg, key, fetchImpl = netFetch, onStage, signal, timeoutMs = ESTIMATE_TIMEOUT, answerMs = ANSWER_TIMEOUT }) {
   let at = null
   const stage = (s, info) => { at = s; if (onStage) onStage(s, info || {}) }
   const ctl = new AbortController()
@@ -212,10 +218,26 @@ export async function estimateMeal({ text, lang, cfg, key, fetchImpl = netFetch,
   const race = p => Promise.race([p, stopped])
 
   const url = baseOf(cfg) + '/chat/completions'
-  const send = plain => race(call(fetchImpl, url, {
-    method: 'POST', headers: headersFor(cfg, key), signal: ctl.signal,
-    body: JSON.stringify(buildEstimateRequest({ text, lang, model: cfg.model, provider: cfg.provider, plain })),
-  }))
+  // One request to one model. A local model (custom) may just be slow, so it gets all the time.
+  const send = (model, plain) => {
+    const one = new AbortController()
+    ctl.signal.addEventListener('abort', () => one.abort())
+    let silent = false
+    const wait = cfg.provider === 'custom' ? null : setTimeout(() => { silent = true; one.abort() }, answerMs)
+    return race(call(fetchImpl, url, {
+      method: 'POST', headers: headersFor(cfg, key), signal: one.signal,
+      body: JSON.stringify(buildEstimateRequest({ text, lang, model, provider: cfg.provider, plain })),
+    })).catch(e => { throw silent && !ctl.signal.aborted ? new AiError('busy') : e })
+      .finally(() => clearTimeout(wait))
+  }
+  // not every model takes JSON mode or a reasoning setting; the prompt asks for JSON anyway
+  const ask = async model => {
+    try { return await send(model, false) } catch (e) {
+      if (e.kind !== 'http' || e.status !== 400) throw e
+      stage('retry')
+      return send(model, true)
+    }
+  }
 
   // Collects the answer from the stream as it arrives. A provider that ignores `stream` (or the
   // native bridge, which hands over the whole body at once) sends one JSON body instead.
@@ -251,18 +273,24 @@ export async function estimateMeal({ text, lang, cfg, key, fetchImpl = netFetch,
 
   try {
     stage('asking')
-    let res
-    try { res = await send(false) } catch (e) {
-      // not every model takes JSON mode or a reasoning setting; the prompt asks for JSON anyway
-      if (e.kind !== 'http' || e.status !== 400) throw e
-      stage('retry')
-      res = await send(true)
+    let model = cfg.model, res
+    try { res = await ask(model) } catch (e) {
+      if (e.kind !== 'busy') throw e
+      // An overloaded free model is common, and other models on the same key usually answer.
+      // If none does, the first error is the one worth reporting.
+      let others = []
+      try { others = pickModels(cfg.provider, await race(listModels(cfg, key, fetchImpl))).filter(m => m !== model).slice(0, 2) } catch (e2) { if (e2.kind === 'cancelled') throw e2 }
+      for (const m of others) {
+        stage('switch', { model: m })
+        try { res = await ask(m); model = m; break } catch (e3) { if (e3.kind === 'cancelled') throw e3 }
+      }
+      if (!res) throw e
     }
     let content
     // a stream that breaks off midway is a network failure (or the cancel/timeout above)
     try { content = await read(res) } catch (e) { throw e instanceof AiError ? e : new AiError(ctl.signal.aborted ? 'cancelled' : 'network') }
     stage('reading')
-    return parseEstimate(content)
+    return { ...parseEstimate(content), model }
   } catch (e) {
     if (e.kind === 'cancelled' && timedOut) { const err = new AiError('timeout'); err.stage = at; throw err }
     throw e

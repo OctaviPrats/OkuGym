@@ -752,4 +752,9 @@ export default {
   'Model': 'Модель',
   'Lite models answer faster; the others know more products.': 'Модели Lite отвечают быстрее, остальные знают больше продуктов.',
   'Faster': 'Быстрее',
+  // overloaded model, fallback
+  '{0} is busy · trying {1}…': '{0} перегружен · пробуем {1}…',
+  '{0} is overloaded right now (error {1}). Try again in a few minutes, or use quick add.': '{0} сейчас перегружен (ошибка {1}). Попробуйте через несколько минут или воспользуйтесь быстрым добавлением.',
+  '{0} isn’t answering right now. Try again in a few minutes, or use quick add.': '{0} сейчас не отвечает. Попробуйте через несколько минут или воспользуйтесь быстрым добавлением.',
+  'Now using {0} — {1} was overloaded.': 'Теперь используется {0} — {1} был перегружен.',
 }
