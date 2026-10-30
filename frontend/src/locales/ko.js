@@ -639,7 +639,7 @@ export default {
   'API key': 'API 키',
   'Optional': '선택 사항',
   'Paste': '붙여넣기',
-  'The key stays on this device: it isn’t synced or included in backups. Only the meal description is sent — never your weight, history or name.': '키는 이 기기에만 저장돼요. 동기화되거나 백업에 포함되지 않아요. 식사 설명만 전송되며 — 체중, 기록, 이름은 절대 보내지 않아요.',
+  'The key stays on this device: it isn’t synced or included in backups. Only the meal description or photo is sent — never your weight, history or name.': '키는 이 기기에만 저장돼요. 동기화되거나 백업에 포함되지 않아요. 식사 설명이나 사진만 보내고, 체중·기록·이름은 절대 보내지 않아요.',
   'On the free plan Google may use what you send to improve its products.': '무료 요금제에서는 Google이 보낸 내용을 제품 개선에 사용할 수 있어요.',
   'Checking…': '확인 중…',
   'Test and save': '테스트 후 저장',
@@ -757,4 +757,14 @@ export default {
   '{0} is overloaded right now (error {1}). Try again in a few minutes, or use quick add.': '{0}의 사용량이 지금 너무 많아요(오류 {1}). 몇 분 후 다시 시도하거나 빠른 추가를 이용하세요.',
   '{0} isn’t answering right now. Try again in a few minutes, or use quick add.': '{0}이(가) 지금 응답하지 않아요. 몇 분 후 다시 시도하거나 빠른 추가를 이용하세요.',
   'Now using {0} — {1} was overloaded.': '이제 {0}을(를) 사용해요 — {1}의 사용량이 너무 많았어요.',
+  // photo estimates
+  'Take a photo': '사진 찍기',
+  'Choose a photo': '사진 선택',
+  'Remove photo': '사진 삭제',
+  'Add details if you like: half a portion, no sauce…': '원하면 자세히 적어 주세요: 반 인분, 소스 없이…',
+  'Packaged food? A photo of the nutrition label gives the exact numbers.': '포장 식품인가요? 영양 성분표 사진이면 정확한 수치를 알 수 있어요.',
+  'From your photo': '사진으로 추정',
+  'Couldn’t open that photo — try another one.': '사진을 열 수 없어요 — 다른 사진을 골라 주세요.',
+  'That doesn’t look like food — try another photo, or describe it.': '음식처럼 보이지 않아요 — 다른 사진을 쓰거나 글로 설명해 주세요.',
+  'This model can’t read photos. Describe the meal instead, or switch to Google Gemini in Settings → Food.': '이 모델은 사진을 읽을 수 없어요. 글로 설명하거나 설정 → 식단에서 Google Gemini로 바꾸세요.',
 }

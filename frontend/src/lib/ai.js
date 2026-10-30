@@ -23,7 +23,8 @@ export const aiReady = N => !!(N && N.ai && N.ai.on && N.ai.model && (getKey() |
 
 // kind: 'key' (rejected), 'limit' (rate limit / free quota used up), 'busy' (the model is
 // overloaded or not answering — 500–504, common on free tiers), 'network', 'model' (no usable
-// model), 'format' (an answer we can't read), 'timeout', 'cancelled', 'http' (anything else)
+// model), 'vision' (the model can't read photos), 'format' (an answer we can't read), 'timeout',
+// 'cancelled', 'http' (anything else)
 export class AiError extends Error {
   constructor(kind, status) { super(kind); this.kind = kind; this.status = status }
 }
@@ -127,7 +128,7 @@ const LANG_NAMES = {
 
 export function systemPrompt(lang) {
   return [
-    'You estimate the nutrition of food someone describes, for a calorie-tracking app.',
+    'You estimate the nutrition of food someone describes or photographs, for a calorie-tracking app.',
     'Reply with JSON only, no other text, in exactly this shape:',
     '{"items":[{"name":string,"brand":string|null,"serving":string,"grams":number|null,"kcal":number,"p":number,"f":number,"c":number,"confidence":"high"|"medium"|"low","source":"published"|"estimate"}],"assumptions":[{"label":string,"value":string}]}',
     'Rules:',
@@ -135,8 +136,10 @@ export function systemPrompt(lang) {
     '- For chain and restaurant products use the chain\'s published nutrition information when you know it (source "published"); otherwise estimate from similar products (source "estimate").',
     '- When the description leaves out something that changes the numbers (size, type of milk, cooking oil, sauce), assume the most common option and list each assumption in "assumptions" with a short label and value.',
     '- confidence is "high" for packaged or published values, "medium" for typical recipes, "low" for vague descriptions.',
+    '- With a photo: list each food and drink you can see and judge the amounts from visual cues (plate and cutlery size, packaging, glass size). Anything the text adds, like "I only ate half" or "no sauce", takes precedence over what the photo suggests.',
+    '- If the photo shows a nutrition label or a menu with calories, use those numbers (source "published", confidence "high") for the amount eaten, and say in "assumptions" which amount you assumed (one serving, the whole pack…).',
     '- Write names, servings and assumptions in ' + (LANG_NAMES[lang] || 'English') + '. Use metric units.',
-    '- If the text does not describe food or drink, reply {"items":[],"assumptions":[]}.',
+    '- If neither the text nor the photo shows food or drink, reply {"items":[],"assumptions":[]}.',
   ].join('\n')
 }
 
@@ -144,14 +147,18 @@ export function systemPrompt(lang) {
 // slower or loop. Gemini thinks before answering by default; reading a meal needs little of that,
 // so it is asked for low effort — the biggest single cut in waiting time. `plain` drops every
 // extra, for a model that rejects them. The answer is streamed, so the app can tell a model that
-// is thinking or writing from a connection that went quiet.
-export function buildEstimateRequest({ text, lang, model, provider, plain = false }) {
+// is thinking or writing from a connection that went quiet. A photo (a data URL) goes with the
+// text in the OpenAI vision format, which Gemini and the other providers' vision models take.
+export function buildEstimateRequest({ text, image, lang, model, provider, plain = false }) {
+  const words = String(text || '').trim()
   const body = {
     model,
     stream: true,
     messages: [
       { role: 'system', content: systemPrompt(lang) },
-      { role: 'user', content: String(text).trim() },
+      { role: 'user', content: image
+        ? [{ type: 'text', text: words || 'Estimate what is in this photo.' }, { type: 'image_url', image_url: { url: image } }]
+        : words },
     ],
   }
   if (!plain) {
@@ -205,7 +212,7 @@ function sseText(line) {
 // (complete). `signal` cancels; after `timeoutMs` it gives up with AiError('timeout'), whose
 // `stage` says where it got stuck. Both settle straight away even if the transport ignores the
 // abort. The result says which `model` answered: not cfg.model if that one was busy.
-export async function estimateMeal({ text, lang, cfg, key, fetchImpl = netFetch, onStage, signal, timeoutMs = ESTIMATE_TIMEOUT, answerMs = ANSWER_TIMEOUT }) {
+export async function estimateMeal({ text, image, lang, cfg, key, fetchImpl = netFetch, onStage, signal, timeoutMs = ESTIMATE_TIMEOUT, answerMs = ANSWER_TIMEOUT }) {
   let at = null
   const stage = (s, info) => { at = s; if (onStage) onStage(s, info || {}) }
   const ctl = new AbortController()
@@ -226,7 +233,7 @@ export async function estimateMeal({ text, lang, cfg, key, fetchImpl = netFetch,
     const wait = cfg.provider === 'custom' ? null : setTimeout(() => { silent = true; one.abort() }, answerMs)
     return race(call(fetchImpl, url, {
       method: 'POST', headers: headersFor(cfg, key), signal: one.signal,
-      body: JSON.stringify(buildEstimateRequest({ text, lang, model, provider: cfg.provider, plain })),
+      body: JSON.stringify(buildEstimateRequest({ text, image, lang, model, provider: cfg.provider, plain })),
     })).catch(e => { throw silent && !ctl.signal.aborted ? new AiError('busy') : e })
       .finally(() => clearTimeout(wait))
   }
@@ -293,6 +300,8 @@ export async function estimateMeal({ text, lang, cfg, key, fetchImpl = netFetch,
     return { ...parseEstimate(content), model }
   } catch (e) {
     if (e.kind === 'cancelled' && timedOut) { const err = new AiError('timeout'); err.stage = at; throw err }
+    // still refused without the extras: what's left that a text-only model can't take is the photo
+    if (image && e.kind === 'http' && e.status === 400) throw new AiError('vision', 400)
     throw e
   } finally {
     clearTimeout(timer)

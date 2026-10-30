@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Estado** | Aprobado. **Fase 1 implementada** (`src/lib/nutrition.js`, `src/lib/ai.js`, pestaña Comida); fases 2 y 3 pendientes |
+| **Estado** | Aprobado. **Fase 1 implementada** (`src/lib/nutrition.js`, `src/lib/ai.js`, pestaña Comida) y **foto con IA** de la fase 2 (`src/lib/photo.js`); resto de la fase 2 y fase 3 pendientes |
 | **Fecha** | 24 oct 2026 |
 | **Alcance v1** | Déficit calórico (dieta hipocalórica). Mantenimiento y volumen quedan preparados en el modelo de datos, sin UI |
 | **Contexto de uso** | La app se usa en local (APK o navegador en modo invitado), **sin servidor**. Todo lo de esta feature tiene que funcionar así, y **gratis** |
@@ -132,7 +132,7 @@ Hoja inferior (patrón `sheet` de la app) con, en este orden de prioridad:
 > Los valores de este ejemplo son ilustrativos. Parte del diseño es justamente no fingir precisión: cada
 > estimación lleva su confianza y su origen, y siempre se puede corregir.
 
-### 5.6 Código de barras [P6] (fase 2)
+### 5.6 Código de barras [P6] (fase 2 — aplazado, ver D9)
 
 Cámara a pantalla completa con marco guía → al detectar un EAN, ficha del producto desde Open Food Facts (§7.2)
 con valores por 100 g y por ración, selector de cantidad y "Añadir". Si el producto no existe: "Créalo desde la
@@ -390,7 +390,7 @@ la revisión semanal:
 | Fase | Contenido | Criterio de "hecho" |
 |---|---|---|
 | **1 — MVP** | Calculadora (3 pasos + manual) · pantalla del día · tarjeta en Home · pestaña Comida · **conectar IA gratis** con tu clave · añadir con **IA (texto)**, **añadir rápido**, **Recientes/Favoritos**, **repetir comida**, **Mis alimentos** · Ajustes → Nutrición · `nutrition.js` y `ai.js` con tests · backup | Registrar el desayuno del ejemplo de §5.5 en < 30 s la primera vez y en < 5 s la segunda |
-| **2** | Foto con IA · código de barras y búsqueda OFF · base genérica offline · comidas guardadas · alimento propio desde etiqueta · ocultar números | Un producto envasado se registra escaneando, sin escribir |
+| **2** | ✅ Foto con IA (plato, carta o etiqueta nutricional) · código de barras y búsqueda OFF (aplazado, D9) · base genérica offline · comidas guardadas · alimento propio desde etiqueta · ocultar números | Un producto envasado se registra con una foto de la etiqueta, sin escribir |
 | **3** | Revisión semanal + gasto adaptativo · gráfica kcal vs peso en Stats · recordatorio opcional para registrar | Tras 3 semanas de registro, la app propone un objetivo corregido con datos reales |
 
 ## 14. Decisiones pendientes
@@ -405,3 +405,4 @@ la revisión semanal:
 | D6 | ¿SDK de un proveedor concreto o `fetch`? | ✅ **Resuelto:** `fetch` con formato compatible con OpenAI; ninguna dependencia nueva |
 | D7 | ¿Pedir edad y altura aunque haya % de grasa? | Pendiente. Recomendación: opcionales; solo obligatorias sin % de grasa |
 | D8 | ¿Objetivos distintos en días de entreno? | Fase posterior |
+| D9 | ¿Foto, código de barras o ambos? | ✅ **Resuelto:** solo foto por ahora. La foto de la etiqueta nutricional cubre los envasados (la IA lee los valores publicados), sin escáner ni dependencia nueva. El código de barras con Open Food Facts queda para cuando se echen en falta productos que la foto no resuelva |

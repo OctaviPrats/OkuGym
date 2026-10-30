@@ -33,7 +33,12 @@ a food log that doesn't ask you to know how many calories a latte has.
   (recommended), Groq (open models) or OpenRouter, or any OpenAI-compatible endpoint such as a
   local Ollama — and the app calls it straight from your device. One small adapter, no new
   dependencies. The key stays on the device: it's not in your synced data, backups or shared
-  plans. Only the meal description is ever sent.
+  plans. Only the meal description (or its photo) is ever sent.
+- 📷 **Or just take a photo.** Photograph the plate (or pick a photo from the gallery), add a
+  detail if you like — "I only ate half" — and the AI lists what it sees with portions judged
+  from the plate and cutlery. For packaged food, a photo of the **nutrition label** gives the
+  printed numbers, which covers what a barcode scanner would, without one. Photos are shrunk to
+  1024 px on the phone before they're sent, and never stored.
 - **You see what the AI is doing.** The answer streams in, so while you wait the sheet says
   whether the request is still on its way, the model is thinking, or the foods are being written
   (and how many so far), with the seconds and a Cancel button. Free models get overloaded at

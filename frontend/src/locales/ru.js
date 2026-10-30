@@ -639,7 +639,7 @@ export default {
   'API key': 'API-ключ',
   'Optional': 'Необязательно',
   'Paste': 'Вставить',
-  'The key stays on this device: it isn’t synced or included in backups. Only the meal description is sent — never your weight, history or name.': 'Ключ остаётся на этом устройстве: он не синхронизируется и не попадает в резервные копии. Отправляется только описание блюда — никогда ваш вес, история или имя.',
+  'The key stays on this device: it isn’t synced or included in backups. Only the meal description or photo is sent — never your weight, history or name.': 'Ключ остаётся на этом устройстве: он не синхронизируется и не попадает в резервные копии. Отправляется только описание или фото блюда — никогда ваш вес, история или имя.',
   'On the free plan Google may use what you send to improve its products.': 'На бесплатном тарифе Google может использовать отправленное вами для улучшения своих продуктов.',
   'Checking…': 'Проверяем…',
   'Test and save': 'Проверить и сохранить',
@@ -757,4 +757,14 @@ export default {
   '{0} is overloaded right now (error {1}). Try again in a few minutes, or use quick add.': '{0} сейчас перегружен (ошибка {1}). Попробуйте через несколько минут или воспользуйтесь быстрым добавлением.',
   '{0} isn’t answering right now. Try again in a few minutes, or use quick add.': '{0} сейчас не отвечает. Попробуйте через несколько минут или воспользуйтесь быстрым добавлением.',
   'Now using {0} — {1} was overloaded.': 'Теперь используется {0} — {1} был перегружен.',
+  // photo estimates
+  'Take a photo': 'Сделать фото',
+  'Choose a photo': 'Выбрать фото',
+  'Remove photo': 'Убрать фото',
+  'Add details if you like: half a portion, no sauce…': 'Добавьте детали, если хотите: полпорции, без соуса…',
+  'Packaged food? A photo of the nutrition label gives the exact numbers.': 'Что-то в упаковке? Фото этикетки с пищевой ценностью даёт точные цифры.',
+  'From your photo': 'По вашему фото',
+  'Couldn’t open that photo — try another one.': 'Не удалось открыть это фото — попробуйте другое.',
+  'That doesn’t look like food — try another photo, or describe it.': 'Это не похоже на еду — попробуйте другое фото или опишите словами.',
+  'This model can’t read photos. Describe the meal instead, or switch to Google Gemini in Settings → Food.': 'Эта модель не умеет читать фото. Опишите блюдо словами или переключитесь на Google Gemini в разделе Настройки → Питание.',
 }

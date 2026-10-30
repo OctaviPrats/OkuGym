@@ -112,6 +112,14 @@ describe('requests', () => {
     expect(plain.reasoning_effort).toBeUndefined()
   })
 
+  it('sends a photo with the text, or on its own', () => {
+    const img = 'data:image/jpeg;base64,AAAA'
+    const b = buildEstimateRequest({ text: ' half of it ', image: img, lang: 'es', model: 'm', provider: 'gemini' })
+    expect(b.messages[1].content).toEqual([{ type: 'text', text: 'half of it' }, { type: 'image_url', image_url: { url: img } }])
+    expect(buildEstimateRequest({ text: '', image: img, lang: 'es', model: 'm' }).messages[1].content[0].text).toMatch(/photo/)
+    expect(b.messages[0].content).toMatch(/nutrition label/)
+  })
+
   it('builds the base URL per provider', () => {
     expect(baseOf({ provider: 'gemini' })).toBe('https://generativelanguage.googleapis.com/v1beta/openai')
     expect(baseOf({ provider: 'custom', base: 'http://localhost:11434/v1/' })).toBe('http://localhost:11434/v1')
@@ -202,6 +210,12 @@ describe('estimateMeal', () => {
     const f = fakeFetch([{ status: 503, json: {} }, modelList(['gemini-3-flash', 'gemini-3-flash-lite', 'gemini-2.5-flash']), { status: 503, json: {} }, { status: 429, json: {} }])
     await expect(estimateMeal({ text: 'x', lang: 'en', cfg, key: 'K', fetchImpl: f })).rejects.toMatchObject({ kind: 'busy', status: 503 })
     expect(f.calls).toHaveLength(4)
+  })
+
+  it('says so when the model can’t read photos', async () => {
+    const f = fakeFetch([{ status: 400, json: {} }, { status: 400, json: {} }])
+    await expect(estimateMeal({ text: '', image: 'data:image/jpeg;base64,AAAA', lang: 'en', cfg, key: 'K', fetchImpl: f })).rejects.toMatchObject({ kind: 'vision' })
+    expect(f.calls[1].body.messages[1].content[1].type).toBe('image_url')
   })
 
   it('gives a local model all the time it needs', async () => {

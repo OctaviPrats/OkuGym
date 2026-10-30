@@ -639,7 +639,7 @@ export default {
   'API key': 'API anahtarı',
   'Optional': 'İsteğe bağlı',
   'Paste': 'Yapıştır',
-  'The key stays on this device: it isn’t synced or included in backups. Only the meal description is sent — never your weight, history or name.': 'Anahtar bu cihazda kalır: eşitlenmez ve yedeklere dahil edilmez. Sadece öğün açıklaması gönderilir — kilon, geçmişin veya adın asla gönderilmez.',
+  'The key stays on this device: it isn’t synced or included in backups. Only the meal description or photo is sent — never your weight, history or name.': 'Anahtar bu cihazda kalır: senkronize edilmez, yedeklere eklenmez. Yalnızca öğünün açıklaması veya fotoğrafı gönderilir — kilon, geçmişin ya da adın asla.',
   'On the free plan Google may use what you send to improve its products.': 'Ücretsiz planda Google, gönderdiklerini ürünlerini geliştirmek için kullanabilir.',
   'Checking…': 'Kontrol ediliyor…',
   'Test and save': 'Test et ve kaydet',
@@ -757,4 +757,14 @@ export default {
   '{0} is overloaded right now (error {1}). Try again in a few minutes, or use quick add.': '{0} şu anda aşırı yüklü (hata {1}). Birkaç dakika sonra tekrar dene ya da hızlı eklemeyi kullan.',
   '{0} isn’t answering right now. Try again in a few minutes, or use quick add.': '{0} şu anda yanıt vermiyor. Birkaç dakika sonra tekrar dene ya da hızlı eklemeyi kullan.',
   'Now using {0} — {1} was overloaded.': 'Artık {0} kullanılıyor — {1} aşırı yüklüydü.',
+  // photo estimates
+  'Take a photo': 'Fotoğraf çek',
+  'Choose a photo': 'Fotoğraf seç',
+  'Remove photo': 'Fotoğrafı kaldır',
+  'Add details if you like: half a portion, no sauce…': 'İstersen ayrıntı ekle: yarım porsiyon, sossuz…',
+  'Packaged food? A photo of the nutrition label gives the exact numbers.': 'Paketli bir ürün mü? Besin değerleri etiketinin fotoğrafı tam değerleri verir.',
+  'From your photo': 'Fotoğrafından',
+  'Couldn’t open that photo — try another one.': 'Bu fotoğraf açılamadı — başka bir tane dene.',
+  'That doesn’t look like food — try another photo, or describe it.': 'Bu yiyecek gibi görünmüyor — başka bir fotoğraf dene ya da tarif et.',
+  'This model can’t read photos. Describe the meal instead, or switch to Google Gemini in Settings → Food.': 'Bu model fotoğraf okuyamıyor. Öğünü tarif et ya da Ayarlar → Yemek bölümünden Google Gemini’ye geç.',
 }

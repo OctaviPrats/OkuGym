@@ -10,6 +10,7 @@ import {
   recentFoods, macroShares, SLOTS, SLOT_NAMES,
 } from './lib/nutrition.js'
 import { PROVIDERS, aiReady, getKey, setKey, connect, availableModels, estimateMeal } from './lib/ai.js'
+import { shrinkPhoto } from './lib/photo.js'
 import Icon from './components/Icon.jsx'
 import { Button, Check, NumberField, Row, Section, Segmented, SearchField, SelectRow, Stepper, TextField } from './components/ui.jsx'
 
@@ -36,6 +37,7 @@ export function aiErrorText(e) {
     case 'limit': return t('Free quota used up for now — try again later, or use quick add.')
     case 'network': return t('Couldn’t reach the AI provider. Check your connection.')
     case 'model': return t('No usable model found on this account.')
+    case 'vision': return t('This model can’t read photos. Describe the meal instead, or switch to Google Gemini in Settings → Food.')
     case 'format': return t('Couldn’t read the AI’s answer — try again, or describe it differently.')
     case 'busy': return e.status
       ? t('{0} is overloaded right now (error {1}). Try again in a few minutes, or use quick add.', providerName(e.provider), e.status)
@@ -58,12 +60,12 @@ function useEstimate(cfg) {
   const [prog, setProg] = useState(null)
   const ctl = useRef(null)
   useEffect(() => () => { if (ctl.current) ctl.current.abort() }, [])
-  const run = async text => {
+  const run = async (text, image) => {
     ctl.current = new AbortController()
     setProg({ stage: 'asking', items: 0 })
     const t0 = Date.now()
     try {
-      const res = await estimateMeal({ text, lang: getLang(), cfg, key: getKey(), signal: ctl.current.signal,
+      const res = await estimateMeal({ text, image, lang: getLang(), cfg, key: getKey(), signal: ctl.current.signal,
         onStage: (stage, info) => setProg({ stage, items: info.items || 0, model: info.model }) })
       if (res.model && res.model !== cfg.model) {
         mutate(n => { if (n.ai) n.ai.model = res.model })
@@ -138,9 +140,34 @@ function MacroSplit({ p, f, c }) {
 
 /* ============================ add to a meal ============================ */
 
+// A photo of the plate, a menu or a nutrition label, taken or picked. The camera input opens the
+// phone's camera app straight away; the other one, the gallery. Only one photo at a time, and it
+// is never stored: it lives in the sheet until the estimate is done.
+function PhotoPick({ photo, onPhoto, disabled }) {
+  const cam = useRef(null), gal = useRef(null)
+  const take = async e => {
+    const file = e.target.files && e.target.files[0]
+    e.target.value = ''
+    if (!file) return
+    try { onPhoto(await shrinkPhoto(file)) } catch (err) { toast(t('Couldn’t open that photo — try another one.')) }
+  }
+  return <>
+    <input ref={cam} type="file" accept="image/*" capture="environment" hidden onChange={take} />
+    <input ref={gal} type="file" accept="image/*" hidden onChange={take} />
+    {photo ? <span className="thumb">
+      <img src={photo} alt="" />
+      {!disabled && <button aria-label={t('Remove photo')} onClick={() => onPhoto(null)}><Icon name="xmark" /></button>}
+    </span> : <span className="row" style={{ gap: 8 }}>
+      <button className="rbtn" aria-label={t('Take a photo')} disabled={disabled} onClick={() => cam.current.click()}><Icon name="camera" /></button>
+      <button className="rbtn" aria-label={t('Choose a photo')} disabled={disabled} onClick={() => gal.current.click()}><Icon name="photo" /></button>
+    </span>}
+  </>
+}
+
 function AddFood({ slot, iso, close }) {
   const N = useN()
   const [text, setText] = useState('')
+  const [photo, setPhoto] = useState(null)
   const [tab, setTab] = useState('recent')
   const [q, setQ] = useState('')
   const ready = aiReady(N)
@@ -149,11 +176,11 @@ function AddFood({ slot, iso, close }) {
 
   const estimate = async () => {
     const txt = text.trim()
-    if (!txt || est.busy) return
+    if ((!txt && !photo) || est.busy) return
     try {
-      const res = await est.run(txt)
-      if (!res.items.length) toast(t('That doesn’t read as food — try describing it differently.'))
-      else estimateSheet({ res, text: txt, slot, iso, done: close })
+      const res = await est.run(txt, photo)
+      if (!res.items.length) toast(photo ? t('That doesn’t look like food — try another photo, or describe it.') : t('That doesn’t read as food — try describing it differently.'))
+      else estimateSheet({ res, text: txt, image: photo, slot, iso, done: close })
     } catch (e) { if (e.kind !== 'cancelled') toast(aiErrorText(e)) }
   }
   const ql = q.trim().toLowerCase()
@@ -170,14 +197,19 @@ function AddFood({ slot, iso, close }) {
       <div className="describe">
         <label htmlFor="describe">{t('Describe what you ate')}</label>
         <textarea id="describe" rows={2} value={text} maxLength={400} readOnly={est.busy} onChange={e => setText(e.target.value)}
-          placeholder={t('e.g. a large latte and an egg sandwich from Starbucks')} />
-        {est.busy ? <AiProgress prog={est.prog} provider={N.ai.provider} onCancel={est.cancel} /> : (
+          placeholder={photo ? t('Add details if you like: half a portion, no sauce…') : t('e.g. a large latte and an egg sandwich from Starbucks')} />
+        {est.busy ? <>
+          {photo && <div className="act"><PhotoPick photo={photo} disabled /></div>}
+          <AiProgress prog={est.prog} provider={N.ai.provider} onCancel={est.cancel} />
+        </> : (
           <div className="act">
-            <Button variant="primary" size="sm" icon="sparkles" disabled={!text.trim()} onClick={estimate}>{t('Get estimate')}</Button>
+            <PhotoPick photo={photo} onPhoto={setPhoto} />
+            <Button variant="primary" size="sm" icon="sparkles" disabled={!text.trim() && !photo} onClick={estimate}>{t('Get estimate')}</Button>
           </div>
         )}
       </div>
-      <p className="sect-f" style={{ marginBottom: 16 }}>{t('AI suggests the calories and macros. You check them before anything is saved.')}</p>
+      <p className="sect-f" style={{ marginBottom: 16 }}>{t('AI suggests the calories and macros. You check them before anything is saved.')}
+        {' ' + t('Packaged food? A photo of the nutrition label gives the exact numbers.')}</p>
     </> : (
       <Section>
         <Row icon="sparkles" iconTint="var(--purple)" title={t('Describe it — AI does the numbers')}
@@ -216,7 +248,7 @@ export const addFoodSheet = (slot, iso = todayISO()) => ui().openSheet(close => 
 
 const asItems = items => items.map(i => ({ ...i, qty: 1, on: true }))
 
-function Estimate({ res, text, slot, iso, done, close }) {
+function Estimate({ res, text, image, slot, iso, done, close }) {
   const N = useN()
   const [items, setItems] = useState(asItems(res.items))
   const [assumptions, setAssumptions] = useState(res.assumptions)
@@ -232,9 +264,9 @@ function Estimate({ res, text, slot, iso, done, close }) {
   // A changed assumption goes back to the model as a correction, so every number that
   // depends on it moves together (a smaller coffee is less milk is less of everything).
   const redo = async correction => {
-    const txt = ask + '\n' + correction
+    const txt = (ask ? ask + '\n' : '') + correction
     try {
-      const r = await est.run(txt)
+      const r = await est.run(txt, image)
       if (r.items.length) { setItems(asItems(r.items)); setAssumptions(r.assumptions); setAsk(txt) }
     } catch (e) { if (e.kind !== 'cancelled') toast(aiErrorText(e)) }
   }
@@ -247,8 +279,8 @@ function Estimate({ res, text, slot, iso, done, close }) {
   return <>
     <h3>{t('Estimate')}</h3>
     <div className="quote">
-      <Icon name="sparkles" className="accent" />
-      <span style={{ flex: 1 }}>«{text}»</span>
+      {image ? <img src={image} alt="" /> : <Icon name="sparkles" className="accent" />}
+      <span style={{ flex: 1 }}>{text ? '«' + text + '»' : <span className="muted">{t('From your photo')}</span>}</span>
       <button className="accent" onClick={close}>{t('Edit')}</button>
     </div>
     <div className="list">
@@ -533,7 +565,7 @@ function AiConnect({ close }) {
     </div>
     <div className="note" style={{ marginBottom: 14 }}>
       <Icon name="lock" />
-      <span>{t('The key stays on this device: it isn’t synced or included in backups. Only the meal description is sent — never your weight, history or name.')}
+      <span>{t('The key stays on this device: it isn’t synced or included in backups. Only the meal description or photo is sent — never your weight, history or name.')}
         {provider === 'gemini' && ' ' + t('On the free plan Google may use what you send to improve its products.')}</span>
     </div>
     <Button variant="primary" disabled={busy || (!key.trim() && provider !== 'custom')} onClick={test}>

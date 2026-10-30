@@ -639,7 +639,7 @@ export default {
   'API key': 'Chiave API',
   'Optional': 'Facoltativo',
   'Paste': 'Incolla',
-  'The key stays on this device: it isn’t synced or included in backups. Only the meal description is sent — never your weight, history or name.': 'La chiave resta su questo dispositivo: non viene sincronizzata né inclusa nei backup. Viene inviata solo la descrizione del pasto — mai il tuo peso, la cronologia o il nome.',
+  'The key stays on this device: it isn’t synced or included in backups. Only the meal description or photo is sent — never your weight, history or name.': 'La chiave resta su questo dispositivo: non viene sincronizzata né inclusa nei backup. Viene inviata solo la descrizione o la foto del pasto, mai il tuo peso, lo storico o il nome.',
   'On the free plan Google may use what you send to improve its products.': 'Con il piano gratuito Google può usare ciò che invii per migliorare i suoi prodotti.',
   'Checking…': 'Verifica…',
   'Test and save': 'Prova e salva',
@@ -757,4 +757,14 @@ export default {
   '{0} is overloaded right now (error {1}). Try again in a few minutes, or use quick add.': '{0} è sovraccarico in questo momento (errore {1}). Riprova tra qualche minuto o usa l’aggiunta rapida.',
   '{0} isn’t answering right now. Try again in a few minutes, or use quick add.': '{0} non risponde in questo momento. Riprova tra qualche minuto o usa l’aggiunta rapida.',
   'Now using {0} — {1} was overloaded.': 'Ora usi {0}: {1} era sovraccarico.',
+  // photo estimates
+  'Take a photo': 'Scatta una foto',
+  'Choose a photo': 'Scegli una foto',
+  'Remove photo': 'Rimuovi foto',
+  'Add details if you like: half a portion, no sauce…': 'Aggiungi dettagli se vuoi: mezza porzione, senza salsa…',
+  'Packaged food? A photo of the nutrition label gives the exact numbers.': 'Un prodotto confezionato? Una foto dell’etichetta nutrizionale dà i valori esatti.',
+  'From your photo': 'Dalla tua foto',
+  'Couldn’t open that photo — try another one.': 'Impossibile aprire questa foto: provane un’altra.',
+  'That doesn’t look like food — try another photo, or describe it.': 'Non sembra cibo: prova un’altra foto o descrivilo.',
+  'This model can’t read photos. Describe the meal instead, or switch to Google Gemini in Settings → Food.': 'Questo modello non sa leggere le foto. Descrivi il pasto o passa a Google Gemini in Impostazioni → Pasti.',
 }

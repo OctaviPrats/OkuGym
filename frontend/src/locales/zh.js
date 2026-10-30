@@ -639,7 +639,7 @@ export default {
   'API key': 'API 密钥',
   'Optional': '可选',
   'Paste': '粘贴',
-  'The key stays on this device: it isn’t synced or included in backups. Only the meal description is sent — never your weight, history or name.': '密钥只保存在本设备：不会同步，也不会包含在备份中。只发送餐食描述——绝不发送你的体重、历史记录或姓名。',
+  'The key stays on this device: it isn’t synced or included in backups. Only the meal description or photo is sent — never your weight, history or name.': '密钥只保存在此设备上：不会同步，也不会包含在备份中。只会发送餐食的描述或照片——绝不发送你的体重、记录或姓名。',
   'On the free plan Google may use what you send to improve its products.': '使用免费套餐时，Google 可能会用你发送的内容改进其产品。',
   'Checking…': '检查中…',
   'Test and save': '测试并保存',
@@ -757,4 +757,14 @@ export default {
   '{0} is overloaded right now (error {1}). Try again in a few minutes, or use quick add.': '{0} 当前负载过高（错误 {1}）。请几分钟后重试，或使用快速添加。',
   '{0} isn’t answering right now. Try again in a few minutes, or use quick add.': '{0} 当前没有响应。请几分钟后重试，或使用快速添加。',
   'Now using {0} — {1} was overloaded.': '现已改用 {0}——{1} 负载过高。',
+  // photo estimates
+  'Take a photo': '拍照',
+  'Choose a photo': '选择照片',
+  'Remove photo': '移除照片',
+  'Add details if you like: half a portion, no sauce…': '可补充细节：半份、不加酱…',
+  'Packaged food? A photo of the nutrition label gives the exact numbers.': '包装食品？拍下营养成分表即可得到准确数值。',
+  'From your photo': '根据你的照片',
+  'Couldn’t open that photo — try another one.': '无法打开这张照片——请换一张。',
+  'That doesn’t look like food — try another photo, or describe it.': '这看起来不像食物——请换一张照片，或用文字描述。',
+  'This model can’t read photos. Describe the meal instead, or switch to Google Gemini in Settings → Food.': '该模型无法读取照片。请用文字描述，或在“设置 → 饮食”中改用 Google Gemini。',
 }

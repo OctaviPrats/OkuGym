@@ -639,7 +639,7 @@ export default {
   'API key': 'API कुंजी',
   'Optional': 'वैकल्पिक',
   'Paste': 'पेस्ट करें',
-  'The key stays on this device: it isn’t synced or included in backups. Only the meal description is sent — never your weight, history or name.': 'कुंजी इसी डिवाइस पर रहती है: न सिंक होती है, न बैकअप में शामिल होती है। सिर्फ़ भोजन का विवरण भेजा जाता है — आपका वज़न, इतिहास या नाम कभी नहीं।',
+  'The key stays on this device: it isn’t synced or included in backups. Only the meal description or photo is sent — never your weight, history or name.': 'कुंजी इसी डिवाइस पर रहती है: न सिंक होती है, न बैकअप में जाती है। सिर्फ़ भोजन का विवरण या फ़ोटो भेजा जाता है — आपका वज़न, इतिहास या नाम कभी नहीं।',
   'On the free plan Google may use what you send to improve its products.': 'मुफ़्त प्लान पर Google आपकी भेजी गई जानकारी का इस्तेमाल अपने प्रोडक्ट बेहतर बनाने के लिए कर सकता है।',
   'Checking…': 'जाँच हो रही है…',
   'Test and save': 'टेस्ट करें और सहेजें',
@@ -757,4 +757,14 @@ export default {
   '{0} is overloaded right now (error {1}). Try again in a few minutes, or use quick add.': '{0} पर अभी बहुत ज़्यादा लोड है (त्रुटि {1})। कुछ मिनट बाद फिर कोशिश करें, या झटपट एंट्री का इस्तेमाल करें।',
   '{0} isn’t answering right now. Try again in a few minutes, or use quick add.': '{0} अभी जवाब नहीं दे रहा। कुछ मिनट बाद फिर कोशिश करें, या झटपट एंट्री का इस्तेमाल करें।',
   'Now using {0} — {1} was overloaded.': 'अब {0} इस्तेमाल हो रहा है — {1} पर ज़्यादा लोड था।',
+  // photo estimates
+  'Take a photo': 'फ़ोटो लें',
+  'Choose a photo': 'फ़ोटो चुनें',
+  'Remove photo': 'फ़ोटो हटाएँ',
+  'Add details if you like: half a portion, no sauce…': 'चाहें तो ब्योरा जोड़ें: आधी प्लेट, बिना सॉस…',
+  'Packaged food? A photo of the nutrition label gives the exact numbers.': 'पैक्ड खाना? पोषण लेबल की फ़ोटो से सटीक आँकड़े मिलते हैं।',
+  'From your photo': 'आपकी फ़ोटो से',
+  'Couldn’t open that photo — try another one.': 'यह फ़ोटो खुल नहीं सकी — कोई दूसरी आज़माएँ।',
+  'That doesn’t look like food — try another photo, or describe it.': 'यह खाने जैसा नहीं लगता — दूसरी फ़ोटो आज़माएँ, या लिखकर बताएँ।',
+  'This model can’t read photos. Describe the meal instead, or switch to Google Gemini in Settings → Food.': 'यह मॉडल फ़ोटो नहीं पढ़ सकता। भोजन लिखकर बताएँ, या सेटिंग्स → खाना में Google Gemini पर जाएँ।',
 }
