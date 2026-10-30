@@ -1,5 +1,61 @@
 # Changelog
 
+## v1.3.0 — 2026-10-30
+
+OkuGym tracked what you lift and what you weigh, but not the other half of the equation: what
+you eat. A new **Food** tab gives you a daily calorie target worked out from your own data, and
+a food log that doesn't ask you to know how many calories a latte has.
+
+### A calorie target, worked out — not guessed
+
+- 🎯 **A three-step calculator.** Your details (body weight and body fat come straight from your
+  log), a deficit, then macros. With a body-fat reading it uses **Katch-McArdle**, so age and
+  height are optional; without one, **Mifflin-St Jeor**. The activity level is suggested from your
+  weekly plan, and workout calories are never added on top — the activity factor already counts
+  them, and adding them again would count them twice.
+- **A deficit you choose, with its consequences shown.** Gentle (−10 %), moderate (−20 %) or
+  aggressive (−25 %), or fine-tuned by the percent. Each option shows the calories, the expected
+  pace per week and, if you have a goal weight, roughly when you'd reach it. The target never goes
+  below your basal rate or the usual safe minimums, and a pace above 1 % of body weight a week is
+  called out.
+- **Macros in grams.** Protein and fat by the kilo (2.0 and 0.8 g/kg to start, adjustable),
+  carbohydrate takes what's left. With a high body-fat reading protein is based on your goal
+  weight, so it isn't inflated by fat mass. Prefer your own numbers? Type them in instead.
+- Targets keep their history: changing yours today doesn't rewrite how past days are judged.
+
+### A food log for people who don't count calories
+
+- ✨ **Describe it, AI does the numbers.** "A large latte and an egg sandwich from Starbucks"
+  comes back as two items with calories, protein, fat and carbs, a confidence level, where the
+  numbers came from, and the assumptions made (size, milk…) as chips you can tap to change.
+  Nothing is saved until you've checked it.
+- **Free, and no server involved.** You connect your own free API key — Google Gemini
+  (recommended), Groq (open models) or OpenRouter, or any OpenAI-compatible endpoint such as a
+  local Ollama — and the app calls it straight from your device. One small adapter, no new
+  dependencies. The key stays on the device: it's not in your synced data, backups or shared
+  plans. Only the meal description (or its photo) is ever sent.
+- 📷 **Or just take a photo.** Photograph the plate (or pick a photo from the gallery), add a
+  detail if you like — "I only ate half" — and the AI lists what it sees with portions judged
+  from the plate and cutlery. For packaged food, a photo of the **nutrition label** gives the
+  printed numbers, which covers what a barcode scanner would, without one. Photos are shrunk to
+  1024 px on the phone before they're sent, and never stored.
+- **You see what the AI is doing.** The answer streams in, so while you wait the sheet says
+  whether the request is still on its way, the model is thinking, or the foods are being written
+  (and how many so far), with the seconds and a Cancel button. Free models get overloaded at
+  busy times: when yours doesn't start answering within 30 seconds, or says it's overloaded, the
+  next model on your key (a faster *Lite* one, say) is tried, and the one that answers is kept.
+  You can also pick the model yourself in the connection settings.
+- **One tap the second time.** Everything you log lands in *My foods*; the add sheet lists what
+  you usually eat at that meal first, keeps favourites, and repeats your last breakfast (or lunch,
+  or dinner) in one go. **Quick add** takes just the calories when that's all you know.
+- **Today at a glance.** The Food tab shows what's left of the day's target, protein / fat /
+  carbs against theirs, and each meal. Home gets a Nutrition card once you have a target. Going
+  over is shown plainly, never in red.
+- Every entry keeps its own copy of the numbers, so correcting a food later never changes a day
+  you've already eaten — the same rule as logged sets.
+- The **Exercises** library moves to a button in Plan's header to make room for the Food tab.
+- Translated into all 12 UI languages.
+
 ## v1.2.4 — 2026-08-01
 
 The effort ratings you have been recording since v1.2.3 now answer questions, and bodyweight

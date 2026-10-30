@@ -829,12 +829,12 @@ h4.sec{
 #toast{
   position:fixed;left:50%;transform:translateX(-50%) translateY(6px);
   bottom:calc(96px + var(--sab));z-index:200;
-  background:color-mix(in srgb,var(--surface-2) 88%,transparent);
+  background:color-mix(in srgb,var(--surface-2) 96%,transparent);
   backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);
-  border-radius:99px;padding:11px 20px;font-size:15px;font-weight:500;
+  border-radius:22px;padding:11px 20px;font-size:15px;font-weight:500;
   box-shadow:0 10px 30px -6px rgba(0,0,0,.5);
   opacity:0;pointer-events:none;transition:opacity var(--med),transform var(--med) var(--ease);
-  max-width:88vw;text-align:center;
+  max-width:88vw;text-align:center;text-wrap:balance;
 }
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
@@ -901,6 +901,107 @@ h4.sec{
   font-weight:500;font-size:17px;line-height:1.25;text-transform:capitalize;
   letter-spacing:-.012em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;
 }
+
+/* ------------------------------------------------------------ nutrition -- */
+/* Macro colours differ in lightness as well as hue (pink < teal < yellow), and every bar sits
+   next to its name, so nothing is read by colour alone. */
+:root{--mac-p:var(--pink);--mac-f:var(--yellow);--mac-c:var(--teal)}
+.kbar{height:6px;border-radius:99px;background:var(--surface-3);overflow:hidden}
+.kbar>span{display:block;height:100%;border-radius:99px;background:var(--acc);transition:width var(--med) var(--ease)}
+.kbar.sm{height:4px}
+.kbar.lg{height:8px}
+.kstack{display:flex;gap:2px;height:8px;border-radius:99px;overflow:hidden}
+.kstack.lg{height:10px}
+.kstack>span{display:block;height:100%}
+.mgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:14px}
+.mgrid .l{font-size:12px;color:var(--label-2)}
+.mgrid .v{font-size:15px;margin:2px 0 5px}
+.mgrid i,.macrow i{font-style:normal;font-size:13px;color:var(--label-2)}
+.macrows{display:flex;flex-direction:column;gap:11px}
+.macrow .h{display:flex;justify-content:space-between;font-size:15px;margin-bottom:5px}
+.kleft{text-align:center;margin:6px 0 12px}
+.kleft .n{font-size:48px;font-weight:600;letter-spacing:-.03em;line-height:1.05}
+.kleft .u{font-size:15px;color:var(--label-2);margin-top:2px}
+.kfoot{display:flex;justify-content:space-between;font-size:13px;color:var(--label-2);margin-top:7px}
+.sect-t.split{display:flex;justify-content:space-between;gap:12px}
+.lrow.add{color:var(--acc);gap:8px}
+.lrow.add .icn{font-size:17px;--icon-stroke:2.2}
+.lrow-in{width:84px;flex:none;text-align:right;background:none;border:none;outline:none;padding:0;
+  color:var(--label-2);font-size:17px;letter-spacing:-.012em}
+.lrow-in::placeholder{color:var(--label-3)}
+.lrow-in:focus{color:var(--label)}
+.lrow .unit{flex:none;min-width:30px}
+.lrow .stp{flex:none;width:150px}
+.addc{width:30px;height:30px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;
+  background:var(--acc-soft);color:var(--acc);font-size:15px;--icon-stroke:2.4;transition:transform var(--fast)}
+.addc:active{transform:scale(.9)}
+.steps3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:-6px 0 18px}
+.steps3 span{height:4px;border-radius:99px;background:var(--surface-3)}
+.steps3 span.on{background:var(--acc)}
+.opt{display:flex;align-items:center;gap:12px;width:100%;padding:11px 14px;border-radius:var(--r-card);
+  background:var(--surface);text-align:left;transition:box-shadow var(--fast)}
+.opt.on{box-shadow:inset 0 0 0 2px var(--acc)}
+.opt .grow{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.radio{width:22px;height:22px;border-radius:50%;flex:none;box-shadow:inset 0 0 0 1.8px var(--label-3);transition:box-shadow var(--fast)}
+.radio.on{box-shadow:inset 0 0 0 7px var(--acc)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:8px 14px;font-size:15px}
+.kv>:nth-child(odd){color:var(--label-2)}
+.kv>:nth-child(even){text-align:right}
+.note{display:flex;gap:7px;align-items:flex-start;font-size:13px;line-height:1.38;color:var(--label-2);padding:0 4px;margin-bottom:12px}
+.note .icn{flex:none;font-size:15px;margin-top:1px}
+.note.warn .icn{color:var(--orange)}
+.maced{padding:12px 14px;position:relative}
+.maced+.maced::before{content:'';position:absolute;left:14px;right:0;top:0;height:var(--hair);background:var(--sep)}
+.maced .h{display:flex;align-items:baseline;gap:10px}
+.maced .h b{font-size:22px;font-weight:600;letter-spacing:-.021em}
+.maced .s{display:flex;align-items:center;gap:10px;margin:6px 0 0 20px;font-size:13px;color:var(--label-2);min-height:34px}
+.maced .grow{flex:1;min-width:0}
+.maced .stp{width:150px;flex:none}
+.mdot{width:10px;height:10px;border-radius:50%;flex:none;align-self:center}
+.describe{background:var(--surface);border-radius:var(--r);padding:12px 12px 10px 15px;transition:box-shadow var(--fast)}
+.describe:focus-within{box-shadow:inset 0 0 0 2px var(--acc)}
+.describe label{display:block;font-size:13px;color:var(--label-2);margin-bottom:4px}
+.describe textarea{width:100%;min-height:48px;resize:none;background:none;border:none;outline:none;padding:0;
+  font-size:17px;line-height:1.35;color:var(--label)}
+.describe textarea::placeholder{color:var(--label-3)}
+.describe .act{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:8px}
+.describe .act>:only-child{margin-left:auto}
+.rbtn{width:36px;height:36px;border-radius:50%;background:var(--surface-2);color:var(--acc);display:flex;align-items:center;justify-content:center;font-size:19px}
+.rbtn:disabled{opacity:.4}
+.thumb{position:relative;flex:none;width:52px;height:52px}
+.thumb img{width:100%;height:100%;object-fit:cover;border-radius:10px;display:block}
+.thumb button{position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;background:var(--label-2);color:var(--surface);
+  display:flex;align-items:center;justify-content:center;font-size:13px;box-shadow:0 0 0 2px var(--surface)}
+.quote img{flex:none;width:56px;height:56px;object-fit:cover;border-radius:10px}
+.aiwait{display:flex;flex-direction:column;gap:8px;margin-top:8px;font-size:15px}
+.aiwait .row>[aria-hidden]{white-space:nowrap;margin-left:12px}
+.aiwait .act{display:flex;justify-content:flex-end}
+.kbar.live>span{transition:width .6s var(--ease);animation:klive 1.6s ease-in-out infinite}
+@keyframes klive{50%{opacity:.5}}
+.quote{display:flex;gap:10px;align-items:flex-start;background:var(--surface);border-radius:var(--r);
+  padding:11px 14px;margin-bottom:14px;font-size:15px;line-height:1.35;color:var(--label-2)}
+.quote .icn{flex:none;font-size:18px;margin-top:1px}
+.quote button{font-size:15px}
+.est{background:var(--surface);border-radius:var(--r-card);padding:13px 14px;transition:opacity var(--fast)}
+.est.off{opacity:.45}
+.est .top{display:flex;align-items:center;gap:12px}
+.est .top .grow{flex:1;min-width:0}
+.est .tt{font-size:17px;line-height:1.25}
+.est .ss{font-size:13px;color:var(--label-2);margin-top:1px}
+.est .kc{text-align:right;flex:none}
+.est .kc b{display:block;font-size:20px;font-weight:600;letter-spacing:-.02em}
+.est .kc i{font-style:normal;font-size:12px;color:var(--label-2)}
+.est .mac{display:flex;flex-wrap:wrap;gap:4px 14px;margin:10px 0 0 38px;font-size:14px}
+.est .meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin:8px 0 0 38px;font-size:13px;color:var(--label-2)}
+.est .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:1px}
+.tag.ok{background:color-mix(in srgb,var(--green) 16%,transparent);color:var(--green)}
+.tag.warn{background:color-mix(in srgb,var(--orange) 16%,transparent);color:var(--orange)}
+.chips.wrap{flex-wrap:wrap;overflow:visible}
+.chips.wrap .chip{display:inline-flex;align-items:center;gap:4px}
+.chips.wrap .chip .icn{font-size:12px;--icon-stroke:2.4}
+.keyf{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+.keyf .field{flex:1;min-width:0}
+.steps-ol{padding-left:20px;font-size:14px;line-height:1.5;color:var(--label-2)}
 
 /* --------------------------------------------------- desktop (≥1000px) --- */
 .cols{display:block}
