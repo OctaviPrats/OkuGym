@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.3.0 — 2026-10-30
 
 OkuGym tracked what you lift and what you weigh, but not the other half of the equation: what
 you eat. A new **Food** tab gives you a daily calorie target worked out from your own data, and
