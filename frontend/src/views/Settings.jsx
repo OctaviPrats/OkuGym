@@ -2,7 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore, DEF, hasData } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
-import { ACCENTS, todayISO, localTZ } from '../lib/format.js'
+import { ACCENTS, todayISO, localTZ, fmtNum } from '../lib/format.js'
+import { goalOn } from '../lib/nutrition.js'
+import { PROVIDERS, aiReady } from '../lib/ai.js'
+import { aiConnectSheet } from '../foodSheets.jsx'
 import { effortOf } from '../lib/history.js'
 import { api, webauthnOK, passkeyLogin, passkeyRegister, IS_ANDROID } from '../lib/api.js'
 import { pushSupported, enablePush, disablePush, sendTestPush } from '../lib/push.js'
@@ -23,6 +26,7 @@ export default function Settings() {
   const fileRef = useRef(null)
   const importRef = useRef(null)
   const wakeOK = wakeLockSupported()
+  const foodGoal = goalOn(S.nutrition, todayISO())
 
   const doExport = async () => {
     const json = JSON.stringify(S, null, 2)
@@ -138,6 +142,15 @@ export default function Settings() {
           options={[{ value: 'none', label: t('Off') }, { value: 'rir', label: t('RIR') }, { value: 'rpe', label: t('RPE') }]}
           value={effortOf(S)} onChange={v => update(s => { s.effort = v; delete s.showRir })} />
       </Row>
+    </Section>
+
+    {/* ---------- food ---------- */}
+    <Section title={t('Food')}>
+      <Row icon="target" iconTint="var(--yellow)" title={t('Daily target')}
+        value={foodGoal ? fmtNum(foodGoal.kcal) + ' kcal' : t('Not set')} accessory="chevron" onClick={() => nav('/food/goal')} />
+      <Row icon="sparkles" iconTint="var(--purple)" title={t('AI meal estimates')}
+        value={aiReady(S.nutrition) ? (PROVIDERS[S.nutrition.ai.provider] && S.nutrition.ai.provider !== 'custom' ? PROVIDERS[S.nutrition.ai.provider].name : t('Custom')) : t('Off')}
+        accessory="chevron" onClick={aiConnectSheet} />
     </Section>
 
     {(user || MOBILE) && <NotificationsCard S={S} update={update} toast={toast} />}

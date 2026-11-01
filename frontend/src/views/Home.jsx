@@ -7,6 +7,7 @@ import { t, dateLocale } from '../lib/i18n.js'
 import { bwSheet, bfSheet, goalSheet, bfGoalSheet, dayOverrideSheet, calendarSheet, startFlow, loadStarterPlan, bwDeltaColor, bfDeltaColor } from '../sheets.jsx'
 import LineChart from '../components/LineChart.jsx'
 import BodyAverages from '../components/BodyAverages.jsx'
+import NutritionCard from '../components/NutritionCard.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button } from '../components/ui.jsx'
 import { glyphOf } from '../lib/glyphs.js'
@@ -91,6 +92,8 @@ export default function Home() {
         <div style={{ height: 8 }} /><Button onClick={() => nav('/plan')}>{t('Build my own plan')}</Button>
       </div>
     )}
+
+    <NutritionCard />
 
     <div className="card">
       <div className="row between" style={{ marginBottom: 6 }}>
