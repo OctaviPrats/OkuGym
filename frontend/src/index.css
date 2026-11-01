@@ -83,23 +83,24 @@
   --on-acc:#ffffff;
 }
 
-/* espresso — the dark theme in the colours of the hanko icon: roasted-brown surfaces a few
-   points apart, washi-cream text. Everything not set here (status colours, the dark-only
-   rules further down) is the dark theme's, so it reads as dark mode, only warm. */
+/* espresso — the dark theme with the hanko icon's browns spent only on highlights (it comes
+   with the caramel accent). The surfaces keep the dark ramp's steps and lose its faint blue
+   for an equally faint warmth: brown surfaces turned the whole screen brown, which is the
+   accent's job, not the page's. Everything not set here is the dark theme's. */
 :root[data-theme="espresso"] {
-  --bg:        #160f0a;
-  --bg-el:     #1f1610;
-  --surface:   #2a1e16;
-  --surface-2: #3a2b20;
-  --surface-3: #4a382b;
+  --bg:        #0a0908;
+  --bg-el:     #12100f;
+  --surface:   #1e1b1a;
+  --surface-2: #2e2a28;
+  --surface-3: #3c3734;
 
-  --label:     #f3e9dc;
-  --label-2:   rgba(243,233,220,.62);
-  --label-3:   rgba(243,233,220,.34);
-  --label-4:   rgba(243,233,220,.18);
+  --label:     #fbf7f2;
+  --label-2:   rgba(245,238,230,.60);
+  --label-3:   rgba(245,238,230,.32);
+  --label-4:   rgba(245,238,230,.18);
 
-  --sep:       rgba(122,94,72,.55);
-  --sep-op:    rgba(122,94,72,.32);
+  --sep:       rgba(90,84,80,.60);
+  --sep-op:    rgba(90,84,80,.34);
 
   --brown:#d4a373;
 }

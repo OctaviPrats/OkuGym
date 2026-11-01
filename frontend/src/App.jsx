@@ -29,7 +29,7 @@ import Admin from './views/Admin.jsx'
 bindUI(useUI)   // lets the shared controls open sheets without importing the store at module scope
 
 // theme → the browser/status-bar colour, which is the theme's page background
-const THEME_BG = { dark: '#000000', light: '#f2f2f7', espresso: '#160f0a' }
+const THEME_BG = { dark: '#000000', light: '#f2f2f7', espresso: '#0a0908' }
 
 function applyPrefs(theme, accent) {
   const de = document.documentElement
