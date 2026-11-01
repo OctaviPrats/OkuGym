@@ -247,6 +247,7 @@ export default {
   'Theme': 'Тема',
   'Dark': 'Тёмная',
   'Light': 'Светлая',
+  'Espresso': 'Эспрессо',
   'Accent color': 'Акцентный цвет',
   'General': 'Основное',
   'During a workout': 'Во время тренировки',

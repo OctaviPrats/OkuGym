@@ -247,6 +247,7 @@ export default {
   'Theme': 'थीम',
   'Dark': 'डार्क',
   'Light': 'लाइट',
+  'Espresso': 'एस्प्रेसो',
   'Accent color': 'एक्सेंट रंग',
   'General': 'सामान्य',
   'During a workout': 'वर्कआउट के दौरान',

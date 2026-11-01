@@ -247,6 +247,7 @@ export default {
   'Theme': '主题',
   'Dark': '深色',
   'Light': '浅色',
+  'Espresso': '咖啡',
   'Accent color': '强调色',
   'General': '通用',
   'During a workout': '训练期间',
