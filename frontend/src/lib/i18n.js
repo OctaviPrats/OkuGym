@@ -5,17 +5,11 @@
 // language, from the upstream dataset) — also lazy-loaded on language switch.
 import { useSyncExternalStore } from 'react'
 
-// UI languages. de/pt have no instruction pack upstream — instructions fall back to English.
-export const LANGS = {
-  en: 'English', de: 'Deutsch', es: 'Español', fr: 'Français', it: 'Italiano',
-  pt: 'Português', pl: 'Polski', tr: 'Türkçe', ru: 'Русский', zh: '中文',
-  ko: '한국어', hi: 'हिन्दी'
-}
-export const INSTR_LANGS = ['en', 'es', 'fr', 'it', 'tr', 'ru', 'zh', 'hi', 'pl', 'ko']
-const DATE_LOCALES = {
-  en: 'en-GB', de: 'de-DE', es: 'es-ES', fr: 'fr-FR', it: 'it-IT', pt: 'pt-PT',
-  pl: 'pl-PL', tr: 'tr-TR', ru: 'ru-RU', zh: 'zh-CN', ko: 'ko-KR', hi: 'hi-IN'
-}
+// UI languages: English and Spanish only. A profile saved with any other language (the app
+// used to ship ten more) falls back to English in setLang.
+export const LANGS = { en: 'English', es: 'Español' }
+export const INSTR_LANGS = ['en', 'es']
+const DATE_LOCALES = { en: 'en-GB', es: 'es-ES' }
 
 const localePacks = import.meta.glob('../locales/*.js')
 const instrPacks = import.meta.glob('../instr/*.js')
