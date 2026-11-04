@@ -121,10 +121,7 @@ export async function availableModels(cfg, key, fetchImpl = netFetch) {
 
 /* ----------------------------------------------------------- estimate -- */
 
-const LANG_NAMES = {
-  en: 'English', de: 'German', es: 'Spanish', fr: 'French', it: 'Italian', pt: 'Portuguese',
-  pl: 'Polish', tr: 'Turkish', ru: 'Russian', zh: 'Chinese', ko: 'Korean', hi: 'Hindi',
-}
+const LANG_NAMES = { en: 'English', es: 'Spanish' }
 
 export function systemPrompt(lang) {
   return [
