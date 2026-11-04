@@ -20,6 +20,7 @@ let workDone = null
 export const useUI = create((set, get) => ({
   sheets: [],          // { id, render:(close)=>JSX, kind:'sheet'|'center', locked }
   toastMsg: '',
+  toastAct: null,      // { label, run } — a toast can offer to undo what it reports
   timer: null,         // rest countdown between sets — { left, total, endsAt }
   work: null,          // work countdown DURING a timed set (issue #16) — { left, total, endsAt, label }
 
@@ -32,12 +33,15 @@ export const useUI = create((set, get) => ({
   closeSheet(id) { set(s => ({ sheets: s.sheets.filter(x => x.id !== id) })) },
   closeAll() { set({ sheets: [] }) },
 
-  toast(msg) {
-    set({ toastMsg: msg })
+  toast(msg, action = null) {
+    set({ toastMsg: msg, toastAct: action })
     clearTimeout(toastTm)
-    // long enough to read: a short confirmation goes quickly, an explanation stays a while
-    toastTm = setTimeout(() => set({ toastMsg: '' }), Math.min(7000, Math.max(2200, String(msg).length * 55)))
+    // long enough to read: a short confirmation goes quickly, an explanation stays a while,
+    // and one with an undo stays long enough to reach for it
+    toastTm = setTimeout(() => set({ toastMsg: '', toastAct: null }),
+      Math.min(7000, Math.max(action ? 5000 : 2200, String(msg).length * 55)))
   },
+  dismissToast() { clearTimeout(toastTm); set({ toastMsg: '', toastAct: null }) },
 
   startRest(sec) {
     get().stopRest()

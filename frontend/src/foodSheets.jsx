@@ -459,23 +459,39 @@ export const quickAddSheet = (slot, iso, done) => ui().openSheet(close => <Quick
 function ManualGoal({ onSaved, close }) {
   const S = useStore(s => s.S)
   const g = goalOn(S.nutrition, todayISO())
-  const [v, setV] = useState({ kcal: g ? g.kcal : null, p: g ? g.p : null, f: g ? g.f : null, c: g ? g.c : null })
+  const [v, setV] = useState({ kcal: g ? g.kcal : null, p: g ? g.p : null, f: g ? g.f : null, c: g ? g.c : null, tdee: g && g.tdee ? g.tdee : null })
   const autoC = v.kcal > 0 && v.p != null && v.f != null ? Math.max(0, Math.round((v.kcal - v.p * 4 - v.f * 9) / 4)) : null
   const save = () => {
     if (!(v.kcal > 0) || v.p == null || v.f == null) { toast(t('Enter calories, protein and fat')); return }
-    const c = v.c != null ? v.c : autoC
-    mutate(n => { n.goals = withGoal(n.goals, { mode: 'cut', method: 'manual', kcal: Math.round(v.kcal), p: Math.round(v.p), f: Math.round(v.f), c: Math.round(c) }, todayISO()) })
+    const c = Math.round(v.c != null ? v.c : autoC)
+    const tdee = v.tdee > 0 ? Math.round(v.tdee) : null
+    const same = g && g.method === 'manual' && g.kcal === Math.round(v.kcal) && g.p === Math.round(v.p) && g.f === Math.round(v.f) && g.c === c
+    mutate(n => {
+      // Only the maintenance changed: it describes you, not the target, so the goal in force
+      // gets it — and the days it already covered start counting towards the deficit.
+      if (same) { const cur = n.goals.find(x => x.from === g.from); if (tdee) cur.tdee = tdee; else delete cur.tdee; return }
+      n.goals = withGoal(n.goals, { mode: 'cut', method: 'manual', kcal: Math.round(v.kcal), p: Math.round(v.p), f: Math.round(v.f), c, ...(tdee ? { tdee } : {}) }, todayISO())
+    })
     close(); toast(t('Target saved')); if (onSaved) onSaved()
   }
+  const row = k => <Row key={k} title={t(MACRO_LABEL[k])}>
+    <NumberField className="lrow-in" nullable decimal={false} value={v[k]}
+      placeholder={k === 'c' && autoC != null ? String(autoC) : '—'} onChange={x => setV(o => ({ ...o, [k]: x }))} />
+    <span className="muted" style={{ width: 30 }}>{k === 'kcal' ? 'kcal' : 'g'}</span>
+  </Row>
   return <>
     <h3>{t('Your own numbers')}</h3>
     <div className="muted small" style={{ marginBottom: 14 }}>{t('From a nutritionist, another app, or your own maths. Carbs fill in by themselves if you leave them empty.')}</div>
     <Section footer={v.kcal > 0 && v.kcal < 1200 ? t('That’s very low for a diet without supervision.') : null}>
-      {['kcal', 'p', 'f', 'c'].map(k => <Row key={k} title={t(MACRO_LABEL[k])}>
-        <NumberField className="lrow-in" nullable decimal={false} value={v[k]}
-          placeholder={k === 'c' && autoC != null ? String(autoC) : '—'} onChange={x => setV(o => ({ ...o, [k]: x }))} />
-        <span className="muted" style={{ width: 30 }}>{k === 'kcal' ? 'kcal' : 'g'}</span>
-      </Row>)}
+      {['kcal', 'p', 'f', 'c'].map(row)}
+    </Section>
+    <Section footer={v.tdee > 0 && v.kcal > 0 && v.tdee <= v.kcal
+      ? t('Your target isn’t under this maintenance, so it plans no deficit.')
+      : t('Optional: the calories you burn in a day. With it, the Food tab adds up your deficit.')}>
+      <Row title={t('Maintenance')}>
+        <NumberField className="lrow-in" nullable decimal={false} value={v.tdee} placeholder="—" onChange={x => setV(o => ({ ...o, tdee: x }))} />
+        <span className="muted" style={{ width: 30 }}>kcal</span>
+      </Row>
     </Section>
     <Button variant="primary" onClick={save}>{t('Save target')}</Button>
     <div style={{ height: 8 }} />

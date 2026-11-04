@@ -11,6 +11,8 @@
 //            each entry carries its own copy of the values, so editing a food later never
 //            rewrites a day that was already eaten (the same rule as logged sets)
 //   ai       { on, provider, model, base }   the API key is NOT kept here, see ai.js
+//   phases   [{ from }]   where each phase of the diet starts, oldest first (see phasesOf)
+//   incomplete { 'YYYY-MM-DD': true }   days left out of the running deficit
 import { isoOf, uid } from './format.js'
 
 export const KCAL_PER_KG = 7700          // energy in a kilo of body fat — the usual rule of thumb
@@ -232,3 +234,100 @@ export function recentFoods(N, slot, today, limit = 12) {
     .sort((a, b) => (score.get(b.id) || 0) - (score.get(a.id) || 0) || String(b.last).localeCompare(String(a.last)))
     .slice(0, limit)
 }
+
+/* ---------------------------------------------------- the running deficit -- */
+// On a cut what matters is the total: how far under maintenance you ate over a week, a month,
+// the whole diet. A day over the target is usually still a day under maintenance.
+//
+// A day counts once it's over (before today), when what was logged reaches half its goal, and
+// when it isn't marked incomplete. A day with nothing, or half a day, logged is left out —
+// never read as a day of fasting, which would turn forgetting to log into a huge "deficit".
+// Maintenance is the `tdee` of the goal in force that day; a manual goal may not have one, and
+// then its days count against the target but not towards the deficit.
+export const COUNT_MIN = 0.5
+
+export const shiftDay = (iso, n) => { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return isoOf(d) }
+
+export const firstGoalDay = N => ((N && N.goals && N.goals.length) ? N.goals[0].from : null)
+export const isIncomplete = (N, iso) => !!(N && N.incomplete && N.incomplete[iso])
+
+// Marks a day as incomplete (on) or not. Mutates N.
+export function setIncomplete(N, iso, on) {
+  if (on) N.incomplete = { ...(N.incomplete || {}), [iso]: true }
+  else if (N.incomplete) { delete N.incomplete[iso]; if (!Object.keys(N.incomplete).length) delete N.incomplete }
+}
+
+// One day against its goal. `counts`: the day is over and complete; `deficit`/`planned` are
+// only non-zero when it also has a maintenance figure. null without a goal.
+export function deficitOn(N, iso, today) {
+  const g = goalOn(N, iso)
+  if (!g) return null
+  const eaten = totals(dayLog(N, iso)).kcal
+  const tdee = g.tdee > 0 ? g.tdee : null
+  const incomplete = isIncomplete(N, iso)
+  const counts = iso < today && !incomplete && eaten >= g.kcal * COUNT_MIN
+  return {
+    iso, eaten, kcal: g.kcal, tdee, counts, incomplete,
+    deficit: counts && tdee ? tdee - eaten : 0,
+    planned: counts && tdee ? tdee - g.kcal : 0,
+    balance: counts ? g.kcal - eaten : 0,
+  }
+}
+
+// The days from `from` to `to` added up. Never reaches before the first goal nor past
+// yesterday, so `n` is the days that could have counted, and `counted` those that did (with a
+// maintenance figure). `balance` is against the target: positive = under it.
+// `noTdee`: complete days left out because their goal has no maintenance. null without a goal.
+export function deficitOver(N, from, to, today) {
+  const first = firstGoalDay(N)
+  if (!first) return null
+  const lo = from < first ? first : from
+  const yesterday = shiftDay(today, -1)
+  const hi = to > yesterday ? yesterday : to
+  const sum = { from: lo, to: hi, days: [], n: 0, counted: 0, deficit: 0, planned: 0, balance: 0, complete: 0, noTdee: 0 }
+  for (let d = lo; d <= hi; d = shiftDay(d, 1)) {
+    const x = deficitOn(N, d, today)
+    sum.days.push(x)
+    if (!x.counts) continue
+    sum.complete++
+    sum.balance += x.balance
+    if (x.tdee) { sum.counted++; sum.deficit += x.deficit; sum.planned += x.planned }
+    else sum.noTdee++
+  }
+  sum.n = sum.days.length
+  return sum
+}
+
+// The last `days` days, ending yesterday.
+export const deficitLast = (N, days, today) => deficitOver(N, shiftDay(today, -days), shiftDay(today, -1), today)
+
+// The diet's phases, oldest first: { from, to }, each ending the day before the next starts and
+// the current one yesterday (before its own start when it began today). With none saved there
+// is one, from the first goal. Changing the target never starts a phase — only the user does.
+export function phasesOf(N, today) {
+  const first = firstGoalDay(N)
+  if (!first) return []
+  const starts = [...new Set([first, ...((N.phases || []).map(p => p.from))])]
+    .filter(d => d >= first && d <= today).sort()
+  return starts.map((from, i) => ({ from, to: i + 1 < starts.length ? shiftDay(starts[i + 1], -1) : shiftDay(today, -1) }))
+}
+
+// Starts a phase on `from`: after the current one's start, and no later than today. Mutates N.
+// Returns whether it did. Nothing in the log or the goals changes.
+export function startPhase(N, from, today) {
+  const ps = phasesOf(N, today)
+  if (!ps.length || from <= ps[ps.length - 1].from || from > today) return false
+  N.phases = [...(N.phases || []), { from }].sort((a, b) => (a.from < b.from ? -1 : 1))
+  return true
+}
+
+// Removes the phase starting on `from`, which merges its days into the one before. The first
+// phase has nothing before it and stays. Mutates N.
+export function removePhase(N, from) {
+  if (!N.phases) return
+  N.phases = N.phases.filter(p => p.from !== from)
+  if (!N.phases.length) delete N.phases
+}
+
+// The fat a deficit roughly stands for, in the profile's unit (KCAL_PER_KG is a rule of thumb).
+export const fatOf = (kcal, unit) => fromKg(kcal / KCAL_PER_KG, unit)

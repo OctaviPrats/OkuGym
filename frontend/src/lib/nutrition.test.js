@@ -2,8 +2,10 @@ import { describe, it, expect } from 'vitest'
 import {
   bmrOf, tdeeOf, kcalFloor, planDeficit, macrosFor, macroShares, suggestActivity, ageOf, toKg,
   goalOn, withGoal, totals, entryOf, saveFood, logFoods, quickEntry, lastMeal, repeatMeal,
-  recentFoods, emptyNutrition, slotLog, slotAt,
+  recentFoods, emptyNutrition, slotLog, slotAt, deficitOn, deficitOver, deficitLast, phasesOf, startPhase,
+  removePhase, setIncomplete, fatOf, KCAL_PER_KG,
 } from './nutrition.js'
+import { isoOf } from './format.js'
 
 describe('bmrOf', () => {
   it('uses Katch-McArdle when body fat is known', () => {
@@ -226,5 +228,134 @@ describe('the log', () => {
     expect(recentFoods(N, 'breakfast', '2026-10-24').map(f => f.name)).toEqual(['Yogurt', 'Rice'])
     expect(recentFoods(N, 'lunch', '2026-10-24').map(f => f.name)).toEqual(['Rice', 'Yogurt'])
     expect(recentFoods(N, 'lunch', '2026-10-24', 1)).toHaveLength(1)
+  })
+})
+
+describe('the running deficit', () => {
+  // The design canvas's month: maintenance 2130, target 1700, holidays from 23 to 29 Nov with
+  // little logged, a new phase on 30 Nov and only breakfast logged on 6 Dec. Today is 10 Dec.
+  const today = '2026-12-10'
+  const eaten = [
+    1720, 1650, 1590, null, 1780, 1690, 1640, 1810, 1700, 1580, null, 1730, 1660, 1900, 1620, 1690, 1750, // 24 Oct – 9 Nov
+    1680, 1610, 1740, 1690, 2050, 1660,              // 10 – 15 Nov
+    1690, 1820, 1650, 1740, 1980, 1710, null,        // 16 – 22 Nov
+    2450, null, null, 2600, null, null, null,        // 23 – 29 Nov
+    1690, 1640, 1710, 1720, 1980, 2290, 640, 1660, 1690, 1610, // 30 Nov – 9 Dec
+  ]
+  const make = () => {
+    const N = emptyNutrition()
+    N.goals = [{ from: '2026-10-24', mode: 'cut', method: 'katch', tdee: 2130, kcal: 1700, p: 144, f: 57, c: 153 }]
+    eaten.forEach((kcal, i) => {
+      const d = new Date('2026-10-24T12:00:00'); d.setDate(d.getDate() + i)
+      const iso = isoOf(d)
+      if (kcal != null) N.log[iso] = [{ id: 'e' + i, slot: 'lunch', kcal, p: 0, f: 0, c: 0 }]
+    })
+    // today, half eaten: never counts
+    N.log[today] = [{ id: 'now', slot: 'breakfast', kcal: 530, p: 0, f: 0, c: 0 }]
+    N.phases = [{ from: '2026-11-30' }]
+    return N
+  }
+
+  it('adds up the last 7 days, leaving out the half-logged day', () => {
+    const w = deficitLast(make(), 7, today)
+    expect([w.from, w.to, w.n]).toEqual(['2026-12-03', '2026-12-09', 7])
+    expect(w.counted).toBe(6)
+    expect(w.deficit).toBe(1830)
+    expect(w.planned).toBe(2580)
+    expect(w.balance).toBe(-750)      // 750 over the target, and still 1830 under maintenance
+  })
+
+  it('adds up the last 30 days, leaving out days with nothing logged', () => {
+    const w = deficitLast(make(), 30, today)
+    expect([w.from, w.n, w.counted]).toEqual(['2026-11-10', 30, 23])
+    expect(w.deficit).toBe(6930)
+    expect(w.planned).toBe(9890)
+  })
+
+  it('counts a day over maintenance against the total', () => {
+    const d = deficitOn(make(), '2026-11-26', today)
+    expect(d.counts).toBe(true)
+    expect(d.deficit).toBe(-470)
+  })
+
+  it('never counts today, nor reaches before the first goal', () => {
+    const N = make()
+    expect(deficitOn(N, today, today).counts).toBe(false)
+    const w = deficitOver(N, '2026-10-01', '2026-12-31', today)
+    expect([w.from, w.to]).toEqual(['2026-10-24', '2026-12-09'])
+    expect(deficitLast(emptyNutrition(), 7, today)).toBeNull()
+  })
+
+  it('leaves out a day marked incomplete, and brings it back', () => {
+    const N = make()
+    setIncomplete(N, '2026-12-08', true)
+    const w = deficitLast(N, 7, today)
+    expect(w.counted).toBe(5)
+    expect(w.deficit).toBe(1830 - 440)
+    setIncomplete(N, '2026-12-08', false)
+    expect(deficitLast(N, 7, today).deficit).toBe(1830)
+    expect(N.incomplete).toBeUndefined()
+  })
+
+  it('judges each day by its own goal, and recalculating does not start a phase', () => {
+    const N = make()
+    N.goals.push({ from: '2026-12-07', mode: 'cut', method: 'katch', tdee: 2100, kcal: 1650, p: 140, f: 55, c: 150 })
+    const w = deficitLast(N, 7, today)
+    expect(w.deficit).toBe(1830 - 3 * 30)          // 7–9 Dec measured against 2100
+    expect(w.planned).toBe(3 * 430 + 3 * 450)
+    expect(phasesOf(N, today).length).toBe(2)
+  })
+
+  it('leaves out days whose manual goal has no maintenance, and says how many', () => {
+    const N = make()
+    N.goals = [{ from: '2026-10-24', mode: 'cut', method: 'manual', kcal: 1700, p: 144, f: 57, c: 153 }]
+    const w = deficitLast(N, 7, today)
+    expect([w.counted, w.deficit, w.noTdee, w.complete]).toEqual([0, 0, 6, 6])
+    expect(w.balance).toBe(-750)
+  })
+
+  it('splits the diet into phases, the current one ending yesterday', () => {
+    const N = make()
+    expect(phasesOf(N, today)).toEqual([
+      { from: '2026-10-24', to: '2026-11-29' },
+      { from: '2026-11-30', to: '2026-12-09' },
+    ])
+    const [past, cur] = phasesOf(N, today).map(p => deficitOver(N, p.from, p.to, today))
+    expect([past.deficit, past.counted, past.n]).toEqual([10190, 29, 37])
+    expect([cur.deficit, cur.counted, cur.n]).toEqual([3180, 9, 10])
+    expect(phasesOf(emptyNutrition(), today)).toEqual([])
+  })
+
+  it('has one phase from the first goal when none was started', () => {
+    const N = make()
+    delete N.phases
+    expect(phasesOf(N, today)).toEqual([{ from: '2026-10-24', to: '2026-12-09' }])
+  })
+
+  it('starts a phase only after the current one began, and no later than today', () => {
+    const N = make()
+    expect(startPhase(N, '2026-11-30', today)).toBe(false)
+    expect(startPhase(N, '2026-11-20', today)).toBe(false)
+    expect(startPhase(N, '2026-12-11', today)).toBe(false)
+    expect(startPhase(N, today, today)).toBe(true)
+    const ps = phasesOf(N, today)
+    expect(ps[2]).toEqual({ from: today, to: '2026-12-09' })   // nothing counted yet
+    expect(deficitOver(N, ps[2].from, ps[2].to, today).n).toBe(0)
+    expect(ps[1].to).toBe('2026-12-09')
+  })
+
+  it('merges a phase back into the one before, without touching the log', () => {
+    const N = make()
+    const logBefore = JSON.stringify(N.log)
+    removePhase(N, '2026-11-30')
+    expect(phasesOf(N, today)).toEqual([{ from: '2026-10-24', to: '2026-12-09' }])
+    expect(N.phases).toBeUndefined()
+    expect(JSON.stringify(N.log)).toBe(logBefore)
+  })
+
+  it('turns a deficit into fat, in kg or lb', () => {
+    expect(fatOf(KCAL_PER_KG, 'kg')).toBe(1)
+    expect(fatOf(1830, 'kg')).toBeCloseTo(0.238, 3)
+    expect(fatOf(KCAL_PER_KG, 'lb')).toBeCloseTo(2.2046, 3)
   })
 })

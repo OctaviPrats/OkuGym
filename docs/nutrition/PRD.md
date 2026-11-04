@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Estado** | Aprobado. **Fase 1 implementada** (`src/lib/nutrition.js`, `src/lib/ai.js`, pestaña Comida) y **foto con IA** de la fase 2 (`src/lib/photo.js`); resto de la fase 2 y fase 3 pendientes |
+| **Estado** | Aprobado. **Fase 1 implementada** (`src/lib/nutrition.js`, `src/lib/ai.js`, pestaña Comida) **foto con IA** de la fase 2 (`src/lib/photo.js`) y el **déficit acumulado** con etapas ([#20](https://github.com/OctaviPrats/OkuGym/issues/20)); resto de la fase 2 y fase 3 pendientes |
 | **Fecha** | 24 oct 2026 |
 | **Alcance v1** | Déficit calórico (dieta hipocalórica). Mantenimiento y volumen quedan preparados en el modelo de datos, sin UI |
 | **Contexto de uso** | La app se usa en local (APK o navegador en modo invitado), **sin servidor**. Todo lo de esta feature tiene que funcionar así, y **gratis** |
@@ -307,6 +307,8 @@ S.nutrition = {
       kcal: 1890, p: 160, f: 64, c: 169, pPerKg: 2, fPerKg: 0.8 }
   ],
   ai: { on: true, provider: 'gemini', model: '<id del modelo>', base: null },   // la clave NO va aquí (§7.1)
+  phases: [{ from: '2026-11-30' }],          // déficit acumulado (#20): dónde empieza cada etapa; sin ninguna, una desde el primer objetivo
+  incomplete: { '2026-12-06': true },        // días que el usuario deja fuera del déficit acumulado
   foods: [                                   // "Mis alimentos": valores de UNA ración
     { id, name, brand, serving: '1 Grande (473 ml)', kcal: 150, p: 11, f: 5, c: 15,
       src: 'ai' | 'user', fav: false, uses: 12, last: '2026-10-24' }
@@ -321,6 +323,8 @@ S.nutrition = {
 // Fase 2 añadirá: barcode y valores por 100 g en foods (Open Food Facts), meals (comidas guardadas)
 ```
 
+- Los objetivos manuales pueden llevar `tdee` (mantenimiento, opcional) para que sus días cuenten en el déficit
+  acumulado.
 - **Cada entrada guarda una copia de sus valores** (kcal y macros) además del `foodId`: editar un alimento después
   no reescribe días pasados. Es el mismo principio que con las series de un entreno, que nunca se reescriben.
 - **Tamaño:** ~180 B por entrada × 8 al día × 365 ≈ 0,5 MB/año. Sin servidor, el límite que importa es el de
