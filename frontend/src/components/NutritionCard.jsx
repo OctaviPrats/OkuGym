@@ -5,6 +5,7 @@ import { fmtNum, todayISO } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 import { addFoodSheet } from '../foodSheets.jsx'
 import { Button } from './ui.jsx'
+import { DeficitLine } from './DeficitCard.jsx'
 
 const MACROS = [
   { k: 'p', label: 'Protein' },
@@ -36,21 +37,13 @@ export function Remaining({ eaten, goal, big }) {
   )
 }
 
-// Protein / fat / carbs against the goal — three columns on Home, rows on the Food screen.
+// Protein / fat / carbs against the goal, in three columns (Home and the Food screen).
 export function MacroGrid({ sum, goal }) {
   return <div className="mgrid">
     {MACROS.map(m => <div key={m.k}>
       <div className="l">{t(m.label)}</div>
       <div className="v">{fmtNum(Math.round(sum[m.k]))} <i>/ {fmtNum(goal[m.k])} g</i></div>
       <Bar value={sum[m.k]} of={goal[m.k]} size="sm" color={`var(--mac-${m.k})`} />
-    </div>)}
-  </div>
-}
-export function MacroRows({ sum, goal }) {
-  return <div className="macrows">
-    {MACROS.map(m => <div key={m.k} className="macrow">
-      <div className="h"><span>{t(m.label)}</span><span>{fmtNum(Math.round(sum[m.k]))} <i>/ {fmtNum(goal[m.k])} g</i></span></div>
-      <Bar value={sum[m.k]} of={goal[m.k]} color={`var(--mac-${m.k})`} />
     </div>)}
   </div>
 }
@@ -73,5 +66,6 @@ export default function NutritionCard() {
       <div style={{ marginTop: 10 }}><Bar value={sum.kcal} of={goal.kcal} /></div>
       <MacroGrid sum={sum} goal={goal} />
     </div>
+    <DeficitLine />
   </div>
 }

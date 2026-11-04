@@ -1,5 +1,32 @@
 # Changelog
 
+## Unreleased
+
+### How much you've really cut, not just today
+
+On a cut what matters is the total — how far under maintenance you ate over a week, a month, the
+whole diet. A day 300 kcal over your target is usually still a day in deficit, and the Food tab
+couldn't show that until now ([#20](https://github.com/OctaviPrats/OkuGym/issues/20)).
+
+- 📉 **Running deficit.** A new card on the Food tab adds up how far under your maintenance you
+  ate over the **last 7 days**, the **last 30 days** and the **current phase**, with the rough fat
+  it stands for (7700 kcal ≈ 1 kg, or the pound equivalent). Home's Nutrition card shows the
+  last 7 days in one line.
+- **A detail screen** with the running total against what your target planned, a bar per day
+  (days over maintenance in grey, never red) and an (i) sheet that explains the maths — and shows
+  the balance against your *target*, which is a different number from the deficit.
+- **Only days that are over and complete count.** Today counts once it's over. A day with nothing
+  logged, under half its target, or that you mark as **incomplete** (new switch in the day view)
+  is left out — never read as a day of fasting.
+- **Phases.** The running total starts from your first target; **Start a new phase** resets it from
+  today or a day you pick — after holidays, a diet break, a new stretch. Past phases stay in a
+  history with their dates and totals, a toast offers **Undo**, and any phase can be joined back
+  into the one before. Changing your target never starts a phase.
+- **Your own numbers can carry your maintenance.** The manual target sheet has an optional
+  maintenance field; adding it to the target you already have makes its past days count.
+- The day card's macros now sit in three columns, as on Home, so the meals stay in view.
+- Toasts can carry an action (used for Undo).
+
 ## v1.3.0 — 2026-10-30
 
 OkuGym tracked what you lift and what you weigh, but not the other half of the equation: what

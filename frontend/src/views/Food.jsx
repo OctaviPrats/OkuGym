@@ -1,13 +1,14 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
-import { goalOn, totals, dayLog, SLOTS } from '../lib/nutrition.js'
+import { goalOn, totals, dayLog, isIncomplete, setIncomplete, emptyNutrition, SLOTS } from '../lib/nutrition.js'
 import { fmtNum, fmtDate, todayISO, isoOf } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 import { addFoodSheet, entrySheet, entrySub, manualGoalSheet, slotName } from '../foodSheets.jsx'
-import { Bar, MacroRows, Remaining } from '../components/NutritionCard.jsx'
+import { Bar, MacroGrid, Remaining } from '../components/NutritionCard.jsx'
+import DeficitCard from '../components/DeficitCard.jsx'
 import Icon from '../components/Icon.jsx'
-import { Button } from '../components/ui.jsx'
+import { Button, Row, Section, Switch } from '../components/ui.jsx'
 
 const DEFICIT_NAME = { 10: 'gentle deficit', 20: 'moderate deficit', 25: 'aggressive deficit' }
 
@@ -15,6 +16,7 @@ const DEFICIT_NAME = { 10: 'gentle deficit', 20: 'moderate deficit', 25: 'aggres
 export default function Food() {
   const nav = useNavigate()
   const N = useStore(s => s.S.nutrition)
+  const update = useStore(s => s.update)
   const today = todayISO()
   const [day, setDay] = useState(today)
   if (!goalOn(N, today)) return <Intro />
@@ -45,9 +47,10 @@ export default function Food() {
       <Remaining eaten={sum.kcal} goal={goal} big />
       <Bar value={sum.kcal} of={goal.kcal} size="lg" />
       <div className="kfoot"><span>{t('{0} eaten', fmtNum(sum.kcal))}</span><span>{t('Target {0}', fmtNum(goal.kcal))}</span></div>
-      <hr className="divider" />
-      <MacroRows sum={sum} goal={goal} />
+      <MacroGrid sum={sum} goal={goal} />
     </div>
+
+    <DeficitCard />
 
     {SLOTS.map(slot => {
       const es = log.filter(e => e.slot === slot)
@@ -62,6 +65,15 @@ export default function Food() {
         </div>
       </section>
     })}
+
+    {(log.length > 0 || isIncomplete(N, day)) && <Section footer={t('Leaves this day out of your running deficit — for a day you didn’t log everything.')}>
+      <Row title={t('Incomplete day')}>
+        <Switch checked={isIncomplete(N, day)} onChange={on => update(s => {
+          if (!s.nutrition) s.nutrition = emptyNutrition()
+          setIncomplete(s.nutrition, day, on)
+        })} />
+      </Row>
+    </Section>}
   </div>
 }
 

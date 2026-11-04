@@ -947,9 +947,7 @@ h4.sec{
 .mgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:14px}
 .mgrid .l{font-size:12px;color:var(--label-2)}
 .mgrid .v{font-size:15px;margin:2px 0 5px}
-.mgrid i,.macrow i{font-style:normal;font-size:13px;color:var(--label-2)}
-.macrows{display:flex;flex-direction:column;gap:11px}
-.macrow .h{display:flex;justify-content:space-between;font-size:15px;margin-bottom:5px}
+.mgrid i{font-style:normal;font-size:13px;color:var(--label-2)}
 .kleft{text-align:center;margin:6px 0 12px}
 .kleft .n{font-size:48px;font-weight:600;letter-spacing:-.03em;line-height:1.05}
 .kleft .u{font-size:15px;color:var(--label-2);margin-top:2px}
@@ -988,6 +986,53 @@ h4.sec{
 .maced .s{display:flex;align-items:center;gap:10px;margin:6px 0 0 20px;font-size:13px;color:var(--label-2);min-height:34px}
 .maced .grow{flex:1;min-width:0}
 .maced .stp{width:150px;flex:none}
+
+/* --- running deficit (Food card, Home line, detail screen) --- */
+.dcard{display:block;width:100%;text-align:left}
+.dcard h2{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.dcard h2 .icn,.dline .icn{flex:none;font-size:13px;color:var(--label-3);--icon-stroke:2.4}
+.avg .f{font-size:12px;color:var(--acc);margin-top:1px;white-space:nowrap}
+.dnote{width:100%;text-align:left;margin:12px 0 0}
+.dline{display:flex;align-items:center;gap:8px;width:100%;text-align:left;font-size:15px;
+  margin-top:14px;padding-top:12px;border-top:var(--hair) solid var(--sep)}
+.dline .m{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.dline .l{font-size:13px;color:var(--label-2)}
+.dline b{font-weight:600}
+.dline .f,.dfat{color:var(--acc)}
+.hdr.sm{align-items:center}
+.hdr.sm h1{font-size:28px;line-height:1.12;letter-spacing:-.024em}
+.dtot{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 8px;margin-top:4px}
+.dtot .n{font-size:48px;font-weight:600;letter-spacing:-.03em;line-height:1.05}
+.dtot .u{font-size:15px;color:var(--label-2)}
+.dfat{font-size:17px;margin-top:2px}
+.dchart{display:block;width:100%;height:110px;overflow:visible}
+.dchart .base{stroke:var(--sep);stroke-width:1}
+.dchart .area{fill:var(--acc-soft)}
+.dchart .plan{fill:none;stroke:var(--label-3);stroke-width:1.6;stroke-dasharray:4 4}
+.dchart .real{fill:none;stroke:var(--acc);stroke-width:2.4;stroke-linejoin:round;stroke-linecap:round}
+.dax{display:flex;justify-content:space-between;font-size:11px;font-weight:500;color:var(--label-2);margin-top:6px}
+.dleg{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--label-2);margin-top:10px}
+.dleg>span{display:inline-flex;align-items:center;gap:6px}
+.dleg i{display:inline-block;flex:none}
+.dleg .ln{width:14px;height:3px;border-radius:2px;background:var(--acc)}
+.dleg .ln.dash{height:0;background:none;border-top:2px dashed var(--label-3)}
+.dleg .sq{width:9px;height:9px;border-radius:2px;background:var(--acc)}
+.dleg .sq.over{background:var(--grey)}
+.dleg .sq.off{background:none;box-shadow:inset 0 0 0 1.5px var(--label-3)}
+.dbars{display:grid;height:100px;position:relative}
+.dbars::before{content:'';position:absolute;left:0;right:0;top:60px;border-top:1px solid var(--label-3)}
+.dbars>span{position:relative}
+.dbars i{position:absolute;left:0;right:0;background:var(--acc);border-radius:3px 3px 1px 1px}
+.dbars i.over{background:var(--grey);border-radius:1px 1px 3px 3px}
+.dbars i.off{background:none;box-shadow:inset 0 0 0 1.5px var(--label-3);border-radius:3px}
+.dinput{background:var(--surface-2);border:none;border-radius:8px;padding:6px 10px;font-size:15px;color:var(--label)}
+:root:not([data-theme="light"]) .dinput{color-scheme:dark}
+.dinfo{display:flex;flex-direction:column;gap:8px;font-size:15px;line-height:1.4}
+
+/* a toast that offers to undo what it reports */
+#toast.act{display:flex;align-items:center;gap:16px;text-align:left;width:max-content}
+#toast.act.show{pointer-events:auto}
+#toast button{color:var(--acc);font-weight:600;flex:none}
 .mdot{width:10px;height:10px;border-radius:50%;flex:none;align-self:center}
 .describe{background:var(--surface);border-radius:var(--r);padding:12px 12px 10px 15px;transition:box-shadow var(--fast)}
 .describe:focus-within{box-shadow:inset 0 0 0 2px var(--acc)}

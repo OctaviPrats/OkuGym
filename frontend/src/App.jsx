@@ -25,6 +25,7 @@ import History from './views/History.jsx'
 import Library from './views/Library.jsx'
 import Food from './views/Food.jsx'
 import FoodGoal from './views/FoodGoal.jsx'
+import FoodDeficit from './views/FoodDeficit.jsx'
 import Settings from './views/Settings.jsx'
 import Admin from './views/Admin.jsx'
 
@@ -112,6 +113,7 @@ function Shell() {
               <Route path="/library" element={<Library />} />
               <Route path="/food" element={<Food />} />
               <Route path="/food/goal" element={<FoodGoal />} />
+              <Route path="/food/deficit" element={<FoodDeficit />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/admin" element={user?.admin ? <Admin /> : <Navigate to="/home" replace />} />
               <Route path="*" element={<Navigate to="/home" replace />} />
